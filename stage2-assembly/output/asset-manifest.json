@@ -1,0 +1,94 @@
+{
+  "assetName": "lean-mode-muscles.glb",
+  "version": "1.2.0-stage2.6",
+  "buildDate": "2026-11-10T00:15:00+05:30",
+  "generator": "LEAN MODE Stage 2.6 Dual Presentation Anatomy Engine",
+  "coordinateSystem": {
+    "unit": "meters",
+    "up": "+Y",
+    "forward": "+Z",
+    "scale": "1.0 (natural anatomical height, feet at Y=0)"
+  },
+  "metrics": {
+    "fileSizeBytes": 7413832,
+    "fileSizeMB": 7.07,
+    "meshCount": 180,
+    "nodeCount": 180,
+    "vertexCount": 239116,
+    "triangleCount": 246512
+  },
+  "presentationModes": {
+    "modeA": {
+      "id": "full",
+      "name": "Full Muscular Anatomy (Default)",
+      "type": "bilateral",
+      "meshCount": 180,
+      "clippingPlanes": 0,
+      "shaderAppearance": "Neutral grayscale / metallic sculpted medical clay"
+    },
+    "modeB": {
+      "id": "half",
+      "name": "Half-Body Comparison",
+      "type": "sagittal_split",
+      "splitOptions": ["True Sagittal (Physical X=0)", "View-Aligned (Camera)"],
+      "leftHalf": "Natural outer body surface (human-body-surface.glb)",
+      "rightHalf": "Deep muscular anatomy (lean-mode-muscles.glb) + cranial bone (human-skull.glb)"
+    }
+  },
+  "primarySource": {
+    "name": "Human Atlas (DBCLS BodyParts3D 4.0 Polygon Reduction Rate 99%)",
+    "license": "Creative Commons Attribution 4.0 International (CC BY 4.0)",
+    "officialLicenseUrl": "https://lifesciencedb.jp/bp3d/info/user_guide/license/",
+    "chunksConsumed": [1, 2, 3, 4, 5]
+  },
+  "supplementaryAssets": {
+    "bodySurface": {
+      "file": "human-body-surface.glb",
+      "conceptId": "FMA7163",
+      "partId": "FJ2810",
+      "source": "DBCLS BodyParts3D 4.0 chunk 10",
+      "license": "CC BY 4.0",
+      "vertexCount": 22902,
+      "triangleCount": 44744
+    },
+    "cranialStructure": {
+      "file": "human-skull.glb",
+      "source": "DBCLS BodyParts3D 4.0 chunks 12 & 13",
+      "license": "CC BY 4.0",
+      "vertexCount": 38719,
+      "triangleCount": 80094
+    }
+  },
+  "workoutGroups": {
+    "Chest": { "meshCount": 10, "status": "verified" },
+    "Shoulders": { "meshCount": 6, "status": "verified" },
+    "Biceps": { "meshCount": 8, "status": "verified" },
+    "Triceps": { "meshCount": 8, "status": "verified" },
+    "Forearms": { "meshCount": 44, "status": "verified" },
+    "Abs": {
+      "meshCount": 0,
+      "status": "pending_geometry",
+      "conceptIds": ["FMA9628", "FMA13377", "FMA13378"],
+      "note": "Omitted from DBCLS 4.0 element polygon release; documented in MISSING_ANATOMY_REPORT.md"
+    },
+    "Obliques": { "meshCount": 2, "status": "verified" },
+    "UpperBack": {
+      "meshCount": 24,
+      "status": "partial_verified",
+      "missingConcept": "FMA13357 (Latissimus Dorsi)",
+      "note": "Trapezius, rhomboids, levator scapulae, teres major/minor, infraspinatus verified"
+    },
+    "LowerBack": { "meshCount": 26, "status": "verified" },
+    "Glutes": { "meshCount": 18, "status": "verified" },
+    "Quadriceps": { "meshCount": 8, "status": "verified" },
+    "Hamstrings": { "meshCount": 8, "status": "verified" },
+    "Calves": { "meshCount": 18, "status": "verified" }
+  },
+  "anatomicalIntegrity": {
+    "bilateralSeparation": true,
+    "leftMeshCount": 90,
+    "rightMeshCount": 90,
+    "organUiGeometryExcluded": true,
+    "unverifiedSubstitutions": 0
+  }
+}
