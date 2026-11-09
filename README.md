@@ -49,23 +49,37 @@ In Android Studio:
 ## Project Structure
 ```text
 ├── android/               # Native Android Capacitor wrapper project
+├── assets/                # Application styling, branding, and anatomy diagrams
 ├── docs/                  # Architecture specs, roadmaps, and audit logs
-├── scripts/               # Zero-dependency build and dev server scripts
+├── human-atlas-main/      # 3D human anatomy mesh buffers and coordinate maps
+├── muscles-3d-main/       # 3D interactive muscle glTF model and React viewer
+├── scripts/               # Zero-dependency build, test, and dev server scripts
 │   ├── build.mjs          # Static asset packager to dist/
-│   └── server.mjs         # Lightweight local dev/preview HTTP server
+│   ├── server.mjs         # Lightweight local dev/preview HTTP server
+│   ├── verify.mjs         # Invariant & specification verification runner
+│   └── sync-anatomy.mjs   # Anatomy asset synchronization tool
 ├── src/                   # Active application source
+│   ├── anatomy-3d.js      # Three.js 3D model canvas & viewer controller
+│   ├── anatomy-svg.js     # High-fidelity SVG muscle trace viewer & heatmap
 │   ├── food-estimator.js  # Heuristic natural language Indian food parser
+│   ├── heatmap.js         # Interactive muscle heatmap rendering logic
 │   ├── idb.js             # Zero-dependency IndexedDB storage for photo blobs
 │   ├── main.js            # SPA views, navigation bus, and event controllers
+│   ├── muscle-data.js     # Anatomical muscle groups, exercise mappings & recovery data
+│   ├── recovery.js        # Recovery score calculations and fatigue state tracking
 │   ├── store.js           # Mifflin-St Jeor BMR/TDEE math, streak & state manager
 │   └── style.css          # Responsive athletic editorial stylesheet
+├── stage2-assembly/       # Offline food database assembly scripts and USDA/ISA tables
 ├── tests/                 # Automated unit tests (Node test runner)
-│   └── store.test.js      # Unit tests for calculations, migration, & estimators
+│   ├── store.test.js      # Unit tests for calculations, migration, & estimators
+│   ├── recovery.test.js   # Unit tests for muscle fatigue & recovery formulas
+│   └── validator.test.js  # Schema & storage boundary unit tests
 ├── capacitor.config.json  # Capacitor native configuration
 ├── icon.svg               # App vector icon & PWA maskable icon
 ├── index.html             # Single-page application entry HTML
 ├── manifest.webmanifest   # PWA manifest metadata
 ├── package.json           # Scripts and Capacitor dependencies
+├── SUMMARY.md             # Complete workspace audit & deduplication log
 └── sw.js                  # Service Worker cache-first offline manager
 ```
 

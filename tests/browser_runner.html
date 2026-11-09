@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LEAN MODE Test Runner</title>
+  <script type="importmap">
+    {
+      "imports": {
+        "node:test": "./test-shim.js",
+        "node:assert/strict": "./assert-shim.js",
+        "node:assert": "./assert-shim.js",
+        "node:fs": "./fs-shim.js",
+        "node:path": "./path-shim.js",
+        "three": "/src/vendor/three/build/three.module.js",
+        "three/addons/": "/src/vendor/three/"
+      }
+    }
+  </script>
+</head>
+<body style="background:#090e0b; color:#f5f4ed; font-family:monospace; padding:20px;">
+  <h2>LEAN MODE Automated Test Suite</h2>
+  <div id="results">Running tests...</div>
+
+  <script type="module">
+    import { testRunner } from './test-shim.js';
+
+    async function runAll() {
+      const resultsDiv = document.getElementById('results');
+      try {
+        console.log('Loading test suites...');
+        await import('./store.test.js');
+        await import('./training.test.js');
+        await import('./anatomy.test.js');
+        await import('./ui.test.js');
+        await import('./anatomy-3d.test.js');
+
+        const summary = await testRunner.run();
+
+        let html = `<h3>Test Summary</h3>`;
+        html += `<p>Total: ${summary.total} | <span style="color:#c9f25b">Passed: ${summary.passed}</span> | <span style="color:#ef4444">Failed: ${summary.failed}</span></p>`;
+
+        if (summary.failures.length > 0) {
+          html += `<h4>Failures:</h4><ul>`;
+          summary.failures.forEach(f => {
+            html += `<li style="color:#ef4444"><strong>${f.name}</strong>: ${f.error.message}</li>`;
+          });
+          html += `</ul>`;
+        }
+        resultsDiv.innerHTML = html;
+        document.title = summary.failed === 0 ? 'ALL_TESTS_PASSED' : 'TESTS_FAILED';
+
+        // POST results to server
+        const b64 = btoa(JSON.stringify(summary));
+        await fetch('/save-screenshot?name=test-summary', {
+          method: 'POST',
+          body: 'data:image/png;base64,' + b64
+        });
+      } catch (err) {
+        console.error('Fatal runner error:', err);
+        resultsDiv.innerHTML = `<p style="color:#ef4444">Runner Error: ${err.message}</p>`;
+        document.title = 'TESTS_FAILED';
+      }
+    }
+
+    runAll();
+  </script>
+</body>
+</html>

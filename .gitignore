@@ -6,9 +6,22 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # Build artifacts & distribution
-build/
-bin/
-obj/
+/dist/
+/build/
+/bin/
+/obj/
+!src/vendor/three/build/
+
+# De-duplication backups & scratch
+.dedup-backup/
+*.orig
+*.bak
+
+# OS Cruft & editor temp
+.DS_Store
+Thumbs.db
+*.swp
+*~
 
 # Android Studio & Gradle
 .gradle/

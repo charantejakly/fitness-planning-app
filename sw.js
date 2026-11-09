@@ -1,4 +1,4 @@
-const CACHE = "lean-mode-v14";
+const CACHE = "lean-mode-v15";
 const ASSETS = [
   "/",
   "/index.html",
@@ -8,13 +8,22 @@ const ASSETS = [
   "/src/idb.js",
   "/src/muscle-data.js",
   "/src/anatomy-svg.js",
+  "/src/anatomy-3d.js",
   "/src/heatmap.js",
   "/src/recovery.js",
   "/src/style.css",
   "/manifest.webmanifest",
   "/icon.svg",
   "/assets/anatomy/front.png",
-  "/assets/anatomy/back.png"
+  "/assets/anatomy/back.png",
+  "/assets/models/lean-mode-muscles.glb",
+  "/assets/models/human-body-surface.glb",
+  "/assets/models/human-skull.glb",
+  "/assets/models/muscle-model-map.json",
+  "/src/vendor/three/build/three.module.js",
+  "/src/vendor/three/controls/OrbitControls.js",
+  "/src/vendor/three/loaders/GLTFLoader.js",
+  "/src/vendor/three/utils/BufferGeometryUtils.js"
 ];
 
 self.addEventListener("install", (event) => {
