@@ -169,20 +169,26 @@ export function renderAnteriorSvg(muscleColorMap = {}, options = {}) {
     const c = getColor(muscleColorMap, id);
     const isSelected = selectedMuscle === id;
     const isTrained = c !== DEFAULT_GREY;
-    const opacity = isTrained ? "0.65" : "0";
+    const opacity = isTrained ? "0.62" : "0.08";
+    const fill = isTrained ? c : "#6e7b73";
     const paths = (FRONT_PATHS[id] || []).map((d) => {
-      return `<path class="muscle-path" d="${d}" fill="${c}" fill-opacity="${opacity}" />`;
+      return `<path class="muscle-path" d="${d}" fill="${fill}" fill-opacity="${opacity}" />`;
     }).join("\n      ");
 
-    return `<g class="muscle-group ${isSelected ? "is-selected" : ""}" data-muscle="${id}" tabindex="0" role="button" aria-label="${getAria(muscleColorMap, id)}">
+    const cls = isSelected
+      ? (isTrained ? "muscle-group is-selected is-trained" : "muscle-group is-selected")
+      : (isTrained ? "muscle-group is-trained" : "muscle-group ");
+
+    return `<g class="${cls}" data-muscle="${id}" tabindex="0" role="button" aria-label="${getAria(muscleColorMap, id)}">
       ${paths}
     </g>`;
   }).join("\n\n    ");
 
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 500 1024" class="anatomy-svg anterior-view" role="img" aria-label="Anterior Muscle Heatmap">
     <defs>
-      <filter id="muscle-shadow" x="-5%" y="-5%" width="110%" height="110%">
-        <feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.3" />
+      <filter id="muscle-glow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="3" result="blur" />
+        <feComposite in="SourceGraphic" in2="blur" operator="over" />
       </filter>
     </defs>
 
@@ -219,20 +225,26 @@ export function renderPosteriorSvg(muscleColorMap = {}, options = {}) {
     const c = getColor(muscleColorMap, id);
     const isSelected = selectedMuscle === id;
     const isTrained = c !== DEFAULT_GREY;
-    const opacity = isTrained ? "0.65" : "0";
+    const opacity = isTrained ? "0.62" : "0.08";
+    const fill = isTrained ? c : "#6e7b73";
     const paths = (BACK_PATHS[id] || []).map((d) => {
-      return `<path class="muscle-path" d="${d}" fill="${c}" fill-opacity="${opacity}" />`;
+      return `<path class="muscle-path" d="${d}" fill="${fill}" fill-opacity="${opacity}" />`;
     }).join("\n      ");
 
-    return `<g class="muscle-group ${isSelected ? "is-selected" : ""}" data-muscle="${id}" tabindex="0" role="button" aria-label="${getAria(muscleColorMap, id)}">
+    const cls = isSelected
+      ? (isTrained ? "muscle-group is-selected is-trained" : "muscle-group is-selected")
+      : (isTrained ? "muscle-group is-trained" : "muscle-group ");
+
+    return `<g class="${cls}" data-muscle="${id}" tabindex="0" role="button" aria-label="${getAria(muscleColorMap, id)}">
       ${paths}
     </g>`;
   }).join("\n\n    ");
 
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 500 1024" class="anatomy-svg posterior-view" role="img" aria-label="Posterior Muscle Heatmap">
     <defs>
-      <filter id="muscle-shadow-p" x="-5%" y="-5%" width="110%" height="110%">
-        <feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.3" />
+      <filter id="muscle-glow-p" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="3" result="blur" />
+        <feComposite in="SourceGraphic" in2="blur" operator="over" />
       </filter>
     </defs>
 

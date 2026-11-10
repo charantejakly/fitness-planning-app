@@ -37,3 +37,8 @@ android/build/
 tmp/
 temp/
 
+# Non-essential & archived files
+NO NEED/
+graphify-out/
+.idea/
+

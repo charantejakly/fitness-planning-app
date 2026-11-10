@@ -9,6 +9,7 @@ import {
   targetCalories,
   streak,
   weeklySummary,
+  calculateProgressAnalytics,
   validateBackup,
   mergeData,
   blankData,
@@ -40,6 +41,7 @@ import {
   calculateMuscleRecovery,
   calculateAllMuscleRecovery
 } from "./recovery.js";
+import { createAnatomy3DViewer, isWebGLAvailable } from "./anatomy-3d.js";
 
 let data = loadData();
 let activeDate = localDate();
@@ -54,11 +56,31 @@ let editingWorkoutSession = null;
 let activePickerCategory = "All";
 let pickerSearchQuery = "";
 let editingExerciseMusclesIndex = null;
-let customExerciseToEdit = null;
+let editingCustomExerciseId = null;
 
-// Phase 2 Heatmap State
+// URL parameter initialization (for deep-linking & testing)
+const initialParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+
+// Heatmap & 3D Anatomy State
+let anatomyDisplayMode = initialParams?.get("anatomy") || "3d"; // "3d" (default) | "2d" (fallback/toggle)
+let active3DViewer = null;
+let presentationMode3D = initialParams?.get("mode") || "full"; // "full" (Mode A default) | "half" (Mode B)
+let splitMode3D = initialParams?.get("split") || "world"; // "world" (True Sagittal) | "camera" (View-Aligned)
 let heatmapAnatomyView = "anterior"; // "anterior" | "posterior"
-let inspectedMuscleId = null;
+let inspectedMuscleId = initialParams?.get("inspect") || null;
+let previousRenderedView = null;
+
+if (initialParams?.get("view")) {
+  activeView = initialParams.get("view");
+}
+if (initialParams?.get("date")) {
+  activeDate = initialParams.get("date");
+}
+
+// Progress & Analytics interactive state
+let progressMetric = "calories"; // "calories" | "protein" | "sets" | "minutes"
+let progressRange = 7; // 7 | 14 | 30
+let selectedProgressDate = null;
 
 const app = document.querySelector("#app");
 const number = (value) => Number(value || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 });
@@ -78,12 +100,15 @@ function navButton(view, icon, label) {
   </button>`;
 }
 
-function empty(title, copy, action, target) {
-  return `<div class="empty">
+function empty(title, copy, action, target, actionType = null) {
+  const actionAttr = actionType ? `data-action="${actionType}"` : `data-nav="${target}"`;
+  const onclickAttr = actionType === "workout" ? ' onclick="window._openWorkoutEditor && window._openWorkoutEditor()"' : "";
+  const containerAttr = actionType ? `data-action="${actionType}" role="button" tabindex="0" style="cursor:pointer;"` : "";
+  return `<div class="empty" ${containerAttr}${onclickAttr}>
     <div class="empty-mark">+</div>
     <h3>${title}</h3>
     <p>${copy}</p>
-    ${action ? `<button type="button" class="button ghost" data-nav="${target}">${action}</button>` : ""}
+    ${action ? `<button type="button" class="button ghost" ${actionAttr}${onclickAttr}>${action}</button>` : ""}
   </div>`;
 }
 
@@ -160,7 +185,6 @@ function todayView() {
         <p class="eyebrow">FOOD LOG</p>
         <h2>${dateLabel(activeDate)}</h2>
       </div>
-      <button type="button" class="add-button" data-action="food">+ Add food</button>
     </section>
 
     ${
@@ -410,21 +434,166 @@ function profileView() {
 
 // ---------------- PROGRESS & WEEKLY REPORTS VIEW ----------------
 function progressView() {
-  const measurements = [...data.measurements].sort((a, b) => b.date.localeCompare(a.date));
-  const summary = weeklySummary(data.entries, activeDate);
-  const target = targetCalories(data.profile);
+  const analytics = calculateProgressAnalytics(data, activeDate, progressRange);
+  const targetCal = targetCalories(data.profile);
+  const targetProtein = Number(data.profile.proteinTarget) || null;
 
-  const dayBars = summary.days
+  // Metric metadata
+  let metricLabel = "Calories";
+  let metricUnit = "kcal";
+  let targetRefVal = null;
+  let maxVal = 10;
+  let barColor = "#79956b";
+
+  if (progressMetric === "calories") {
+    metricLabel = "Daily Calories";
+    metricUnit = "kcal";
+    targetRefVal = targetCal;
+    maxVal = Math.max(targetCal || 2000, ...analytics.days.map((d) => d.totals.calories), 500);
+    barColor = "#79956b";
+  } else if (progressMetric === "protein") {
+    metricLabel = "Daily Protein";
+    metricUnit = "g";
+    targetRefVal = targetProtein;
+    maxVal = Math.max(targetProtein || 120, ...analytics.days.map((d) => d.totals.protein), 30);
+    barColor = "#3e8879";
+  } else if (progressMetric === "sets") {
+    metricLabel = "Lifting Sets (Volume)";
+    metricUnit = "sets";
+    targetRefVal = null;
+    maxVal = Math.max(15, ...analytics.days.map((d) => d.sets), 5);
+    barColor = "#e98a32";
+  } else if (progressMetric === "minutes") {
+    metricLabel = "Active Workout Time";
+    metricUnit = "min";
+    targetRefVal = null;
+    maxVal = Math.max(60, ...analytics.days.map((d) => d.minutes), 20);
+    barColor = "#51406f";
+  }
+
+  // Target reference line
+  let targetLineHtml = "";
+  if (targetRefVal && targetRefVal > 0 && maxVal > 0) {
+    const targetPercent = Math.min(100, Math.max(5, Math.round((targetRefVal / maxVal) * 100)));
+    targetLineHtml = `
+      <div class="chart-target-line" style="bottom:${targetPercent}%;">
+        <span>Target: ${number(targetRefVal)} ${metricUnit}</span>
+      </div>
+    `;
+  }
+
+  // Days bars
+  const dayBars = analytics.days
     .map((d) => {
-      const cal = d.totals.calories;
-      const heightPercent = target ? Math.min(100, (cal / target) * 100) : cal ? 15 : 0;
-      const weekday = new Intl.DateTimeFormat("en-IN", { weekday: "narrow" }).format(new Date(`${d.date}T12:00:00`));
-      return `<div class="day-bar">
-        <span style="height:${heightPercent}%; ${!d.hasLog ? "opacity:0.25; background:#a3a79d;" : ""}"></span>
-        <small>${weekday}</small>
-      </div>`;
+      let val = 0;
+      if (progressMetric === "calories") val = d.totals.calories;
+      else if (progressMetric === "protein") val = d.totals.protein;
+      else if (progressMetric === "sets") val = d.sets;
+      else if (progressMetric === "minutes") val = d.minutes;
+
+      const isSelected = selectedProgressDate === d.date;
+      const heightPercent = maxVal ? Math.min(100, Math.max(val ? 10 : 3, Math.round((val / maxVal) * 100))) : 3;
+
+      let customBarColor = barColor;
+      if (val === 0) {
+        customBarColor = "var(--line)";
+      } else if (progressMetric === "calories" && targetCal && val > targetCal) {
+        customBarColor = "#b88e40";
+      }
+
+      const valLabel = val ? `${number(val)}${metricUnit === "g" ? "g" : ""}` : "—";
+      const weekdayDisplay = progressRange > 14 ? d.weekdayNarrow : d.weekdayShort;
+
+      const dots = [];
+      if (d.hasFood) dots.push(`<span class="day-bar-dot" title="Food logged"></span>`);
+      if (d.hasWorkout) dots.push(`<span class="day-bar-dot workout" title="Workout logged (${d.sets} sets)"></span>`);
+      if (d.isCompleted) dots.push(`<span class="day-bar-dot complete" title="Day completed"></span>`);
+
+      return `
+        <button type="button" class="day-bar ${isSelected ? "selected" : ""}" data-progress-day="${d.date}" aria-label="${d.weekdayShort} ${dateLabel(d.date)}: ${val} ${metricUnit}">
+          ${val > 0 && progressRange <= 14 ? `<span class="day-bar-val">${valLabel}</span>` : ""}
+          <span style="height:${heightPercent}%; background:${customBarColor}; ${val === 0 ? "opacity:0.35;" : ""}"></span>
+          <small>${weekdayDisplay}</small>
+          <div class="day-bar-indicators">
+            ${dots.join("")}
+          </div>
+        </button>
+      `;
     })
     .join("");
+
+  // Day Inspector Card (if a day is selected)
+  let dayInspectHtml = "";
+  if (selectedProgressDate) {
+    const d = analytics.days.find((x) => x.date === selectedProgressDate);
+    if (d) {
+      const foodSummary = d.hasFood
+        ? `<div style="margin-top:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
+              <strong>Nutrition (${number(d.totals.calories)} kcal)</strong>
+              ${targetCal ? `<small style="color:${d.totals.calories <= targetCal ? "var(--accent)" : "#9c6b1a"}; font-weight:600;">${d.totals.calories - targetCal > 0 ? `+${number(d.totals.calories - targetCal)} over target` : `${number(targetCal - d.totals.calories)} remaining`}</small>` : ""}
+            </div>
+            <p style="margin:4px 0 2px; font-size:11px; color:var(--ink);">
+              <strong>Protein:</strong> ${number(d.totals.protein)}g · <strong>Carbs:</strong> ${number(d.totals.carbs)}g · <strong>Fat:</strong> ${number(d.totals.fat)}g${d.totals.fibre ? ` · <strong>Fibre:</strong> ${number(d.totals.fibre)}g` : ""}
+            </p>
+            <p style="margin:2px 0 0; font-size:11px; color:var(--muted); line-height:1.4;">
+              ${d.entries.map((e) => esc(e.name)).join(" · ")} (${d.entryCount} item${d.entryCount === 1 ? "" : "s"})
+            </p>
+          </div>`
+        : `<p style="margin:6px 0 0; font-size:11px; color:var(--muted);">No food entries logged on this date.</p>`;
+
+      const workoutSummary = d.hasWorkout
+        ? `<div style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--line);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
+              <strong>Training (${d.workoutCount} session${d.workoutCount === 1 ? "" : "s"} · ${d.sets} total sets)</strong>
+              ${d.minutes ? `<small style="color:var(--muted);">${d.minutes} min${d.distance ? ` · ${d.distance} km` : ""}</small>` : ""}
+            </div>
+            <p style="margin:4px 0 2px; font-size:11px; color:var(--ink);">
+              ${d.workouts.map((w) => `<strong>${esc(w.title || w.type || "Workout")}</strong>${w.exercises?.length ? ` (${w.exercises.length} exercise${w.exercises.length === 1 ? "" : "s"})` : ""}`).join(" · ")}
+            </p>
+            ${d.primaryMuscles.length ? `<p style="margin:2px 0 0; font-size:11px; color:var(--muted);"><strong>Muscles stimulated:</strong> ${d.primaryMuscles.map((mId) => CANONICAL_CATALOG.find((c) => c.id === mId)?.name || mId).join(", ")}</p>` : ""}
+          </div>`
+        : `<p style="margin:6px 0 0; font-size:11px; color:var(--muted); padding-top:6px; border-top:1px dashed var(--line);">Rest day — no workouts recorded.</p>`;
+
+      const measurementSummary = d.weight || d.waist
+        ? `<p style="margin:8px 0 0; font-size:11px; color:var(--ink); padding-top:6px; border-top:1px dashed var(--line);">
+            <strong>Body Check-in:</strong> ${d.weight ? `Weight: ${d.weight} kg` : ""}${d.weight && d.waist ? " · " : ""}${d.waist ? `Waist: ${d.waist} cm` : ""}
+          </p>`
+        : "";
+
+      dayInspectHtml = `
+        <div class="day-inspect-card" role="region" aria-label="Day performance details">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+              <strong style="font-size:14px;">${d.weekdayShort}, ${dateLabel(d.date)}</strong>
+              ${d.isCompleted ? `<span class="tag-badge" style="background:#eaf2e8; color:#365327;">Day Complete ✓</span>` : ""}
+              ${d.hasWorkout ? `<span class="tag-badge" style="background:#efeaf7; color:#51406f;">Workout 🏋</span>` : ""}
+            </div>
+            <button type="button" class="button ghost small-button" data-close-progress-inspect aria-label="Close day breakdown">✕</button>
+          </div>
+          ${foodSummary}
+          ${workoutSummary}
+          ${measurementSummary}
+          <div style="display:flex; gap:6px; margin-top:12px; flex-wrap:wrap;">
+            <button type="button" class="button ghost small-button" data-nav-day="today" data-date="${d.date}">Open in Today ↗</button>
+            <button type="button" class="button ghost small-button" data-nav-day="workouts" data-date="${d.date}">Open in Training ↗</button>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  // Top muscles tags
+  const topMusclesHtml = analytics.topMuscles.length
+    ? analytics.topMuscles
+        .slice(0, 5)
+        .map((m) => {
+          const cat = CANONICAL_CATALOG.find((c) => c.id === m.id);
+          const name = cat ? cat.name : m.id;
+          return `<span class="tag-badge">${esc(name)}: <strong>${m.sets} sets</strong></span>`;
+        })
+        .join("")
+    : `<span style="font-size:11px; color:var(--muted);">No lifting sets recorded in this period.</span>`;
 
   return `<main class="screen">
     <header class="topbar">
@@ -438,53 +607,89 @@ function progressView() {
       </div>
     </header>
 
-    <!-- Weekly Report -->
+    <!-- Interactive Performance Chart -->
     <section class="report">
-      <div class="section-head">
+      <div class="section-head" style="margin-bottom:8px;">
         <div>
-          <p class="eyebrow">WEEKLY SUMMARY</p>
-          <h2>7-day calorie record</h2>
+          <p class="eyebrow">INTEGRATED PERFORMANCE RECORD</p>
+          <h2>${metricLabel} (${progressRange}-Day)</h2>
         </div>
       </div>
-      <div class="chart">${dayBars}</div>
-      <div class="weekly-stats">
-        <div><span>Logged days</span><b>${summary.loggedDaysCount} / 7</b></div>
-        <div><span>Avg intake (logged days)</span><b>${summary.avgCalories ? `${number(summary.avgCalories)} kcal` : "No data"}</b></div>
-        <div><span>Avg protein</span><b>${summary.avgProtein ? `${number(summary.avgProtein)} g` : "No data"}</b></div>
-      </div>
-      <p class="form-help">Averages exclude unlogged days; unrecorded days are not assumed to be zero calories.</p>
-    </section>
 
-    <!-- Body Measurements -->
-    <section class="section-head">
-      <div>
-        <p class="eyebrow">BODY METRICS</p>
-        <h2>Weight & waist history</h2>
-      </div>
-      <button type="button" class="add-button" data-action="measurement">+ Add</button>
-    </section>
+      <!-- Controls: Metrics and Range -->
+      <div class="chart-controls">
+        <div class="chart-pill-group" role="tablist" aria-label="Select metric">
+          <button type="button" class="${progressMetric === "calories" ? "active" : ""}" data-progress-metric="calories">Calories</button>
+          <button type="button" class="${progressMetric === "protein" ? "active" : ""}" data-progress-metric="protein">Protein</button>
+          <button type="button" class="${progressMetric === "sets" ? "active" : ""}" data-progress-metric="sets">Training Sets</button>
+          <button type="button" class="${progressMetric === "minutes" ? "active" : ""}" data-progress-metric="minutes">Active Mins</button>
+        </div>
 
-    ${
-      measurements.length
-        ? `<div class="metric-list">
-            ${measurements
-              .map(
-                (m) => `<article>
-                  <div>
-                    <b>${m.weight ? `${m.weight} kg` : "—"}</b>
-                    <span>${m.waist ? `${m.waist} cm lower waist` : "No waist recorded"}${m.upperAbdomen ? ` · ${m.upperAbdomen} cm upper` : ""}</span>
-                  </div>
-                  <time>${dateLabel(m.date)}</time>
-                  <div class="card-actions">
-                    <button type="button" data-edit-measurement="${m.id}" aria-label="Edit measurement">Edit</button>
-                    <button type="button" data-delete-measurement="${m.id}" aria-label="Delete measurement">×</button>
-                  </div>
-                </article>`
-              )
-              .join("")}
-          </div>`
-        : empty("No measurements yet", "Track weight or waist only when you choose to. No trends are inferred from missing check-ins.", "Add measurement", "progress")
-    }
+        <div class="chart-pill-group" role="tablist" aria-label="Select time range">
+          <button type="button" class="${progressRange === 7 ? "active" : ""}" data-progress-range="7">7D</button>
+          <button type="button" class="${progressRange === 14 ? "active" : ""}" data-progress-range="14">14D</button>
+          <button type="button" class="${progressRange === 30 ? "active" : ""}" data-progress-range="30">30D</button>
+        </div>
+      </div>
+
+      <div class="chart-wrapper">
+        ${targetLineHtml}
+        <div class="chart">${dayBars}</div>
+      </div>
+
+      <p class="form-help" style="margin-top:6px; font-size:11px; text-align:center;">
+        Tap any day to inspect full nutrition, workouts, and exercise breakdowns.
+      </p>
+
+      ${dayInspectHtml}
+
+      <!-- Cross-App Summary Analytics -->
+      <div style="margin-top:16px;">
+        <p class="eyebrow" style="margin-bottom:6px;">PERIOD PERFORMANCE TOTALS (${progressRange} DAYS)</p>
+        <div class="analytics-grid">
+          <div class="analytics-cell">
+            <span>Food Logged</span>
+            <b>${analytics.foodLoggedDays} / ${analytics.rangeDays} days</b>
+          </div>
+          <div class="analytics-cell">
+            <span>Avg Intake</span>
+            <b>${analytics.avgCalories ? `${number(analytics.avgCalories)} kcal` : "No data"}</b>
+          </div>
+          <div class="analytics-cell">
+            <span>Avg Protein</span>
+            <b>${analytics.avgProtein ? `${number(analytics.avgProtein)} g` : "No data"}</b>
+          </div>
+          <div class="analytics-cell">
+            <span>Workouts Logged</span>
+            <b>${analytics.totalWorkouts} sessions</b>
+          </div>
+          <div class="analytics-cell">
+            <span>Lifting Volume</span>
+            <b>${analytics.totalSets} total sets</b>
+          </div>
+          <div class="analytics-cell">
+            <span>Active Time</span>
+            <b>${analytics.totalMinutes ? `${analytics.totalMinutes} mins` : "0 mins"}</b>
+          </div>
+          <div class="analytics-cell">
+            <span>Both Food &amp; Gym</span>
+            <b>${analytics.bothLoggedDays} days</b>
+          </div>
+          <div class="analytics-cell">
+            <span>Days Completed</span>
+            <b>${analytics.completedDaysCount} days</b>
+          </div>
+        </div>
+
+        <!-- Top Stimulated Muscles -->
+        <div style="margin-top:12px; padding:10px; background:var(--paper); border:1px solid var(--line); border-radius:10px;">
+          <p class="eyebrow" style="margin:0 0 4px; font-size:10px;">TOP MUSCLES TRAINED (${progressRange}D VOLUME)</p>
+          <div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;">
+            ${topMusclesHtml}
+          </div>
+        </div>
+      </div>
+    </section>
   </main>`;
 }
 
@@ -505,126 +710,145 @@ function detailedBadgeText(w) {
   return `${muscleSummary || "Detailed"} · ${totalSets} set${totalSets === 1 ? "" : "s"}`;
 }
 
-function workoutView() {
-  const list = [...data.workouts].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+function renderInspectCard(mId, heatmapData) {
+  if (!mId) return "";
+  const isTrainedDay = heatmapData !== null && heatmapData.muscles;
+  const mInfo = isTrainedDay && heatmapData.muscles[mId]
+    ? heatmapData.muscles[mId]
+    : null;
 
+  const catItem = CANONICAL_CATALOG.find((c) => c.id === mId);
+  const muscleName = mInfo ? mInfo.name : (catItem ? catItem.name : mId);
+  const viewHint = catItem ? ` (${catItem.view === 'both' ? 'Front & Back' : catItem.view === 'anterior' ? 'Front view' : 'Back view'})` : "";
+  const sets = mInfo ? mInfo.sets : 0;
+  const label = mInfo ? mInfo.label : "No training";
+  const color = mInfo ? mInfo.color : "#A7A9A5";
+
+  const contributingStr = mInfo && mInfo.contributingExercises.length
+    ? mInfo.contributingExercises.map((e) => typeof e === "object" ? `${esc(e.exerciseName)} (${e.sets} set${e.sets === 1 ? "" : "s"})` : esc(e)).join(", ")
+    : "None (0 direct sets)";
+  const secondaryStr = mInfo && mInfo.secondaryInvolvement.length
+    ? mInfo.secondaryInvolvement.map((e) => esc(e)).join(", ")
+    : "None";
+
+  return `
+    <div class="muscle-inspect-card" role="region" aria-label="Inspected muscle details">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="legend-color" style="background:${color}; width:14px; height:14px;"></span>
+          <strong style="font-size:14px;">${esc(muscleName)}</strong>
+          <small style="color:var(--muted); font-size:11px;">${viewHint}</small>
+        </div>
+        <button type="button" class="button ghost small-button" data-action="close-inspect" aria-label="Close muscle details">✕</button>
+      </div>
+      <p style="margin:6px 0 2px; font-size:12px;"><strong>Primary Sets:</strong> ${sets} sets · <span style="color:${color === '#E8C84A' ? '#925f12' : color}; font-weight:600;">${esc(label)}</span></p>
+      <p style="margin:2px 0; font-size:11px; color:var(--ink);"><strong>Contributing exercises (primary):</strong> ${contributingStr}</p>
+      <p style="margin:2px 0; font-size:11px; color:var(--muted);"><strong>Secondary involvement (0 set credit):</strong> ${secondaryStr}</p>
+    </div>
+  `;
+}
+
+function workoutView() {
   // 1. Daily Heatmap calculation for activeDate
   const sessionsOnActiveDate = data.workouts.filter((w) => w.date === activeDate);
+  const list = [...sessionsOnActiveDate].sort((a, b) => (b.time || "").localeCompare(a.time || ""));
   const heatmapData = calculateDailyHeatmap(sessionsOnActiveDate, DEFAULT_HEATMAP_THRESHOLDS);
+  const isTrainedDay = heatmapData !== null;
+  const muscleMap = isTrainedDay ? heatmapData.muscles : {};
 
-  let heatmapHtml = "";
-  if (heatmapData !== null) {
-    const svgHtml = heatmapAnatomyView === "posterior"
-      ? renderPosteriorSvg(heatmapData.muscles, { selectedMuscle: inspectedMuscleId })
-      : renderAnteriorSvg(heatmapData.muscles, { selectedMuscle: inspectedMuscleId });
+  const svgHtml = heatmapAnatomyView === "posterior"
+    ? renderPosteriorSvg(muscleMap, { selectedMuscle: inspectedMuscleId })
+    : renderAnteriorSvg(muscleMap, { selectedMuscle: inspectedMuscleId });
 
-    let inspectCardHtml = "";
-    if (inspectedMuscleId && heatmapData.muscles[inspectedMuscleId]) {
-      const mInfo = heatmapData.muscles[inspectedMuscleId];
-      const contributingStr = mInfo.contributingExercises.length
-        ? mInfo.contributingExercises.map((e) => typeof e === "object" ? `${esc(e.exerciseName)} (${e.sets} set${e.sets === 1 ? "" : "s"})` : esc(e)).join(", ")
-        : "None (0 direct sets)";
-      const secondaryStr = mInfo.secondaryInvolvement.length
-        ? mInfo.secondaryInvolvement.map((e) => esc(e)).join(", ")
-        : "None";
+  const inspectCardHtml = renderInspectCard(inspectedMuscleId, heatmapData);
 
-      const catItem = CANONICAL_CATALOG.find((c) => c.id === inspectedMuscleId);
-      const viewHint = catItem ? ` (${catItem.view === 'both' ? 'Front & Back' : catItem.view === 'anterior' ? 'Front view' : 'Back view'})` : "";
-
-      inspectCardHtml = `
-        <div class="muscle-inspect-card" role="region" aria-label="Inspected muscle details">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span class="legend-color" style="background:${mInfo.color}; width:14px; height:14px;"></span>
-              <strong style="font-size:14px;">${esc(mInfo.name)}</strong>
-              <small style="color:var(--muted); font-size:11px;">${viewHint}</small>
-            </div>
-            <button type="button" class="button ghost small-button" data-action="close-inspect" aria-label="Close muscle details">✕</button>
-          </div>
-          <p style="margin:6px 0 2px; font-size:12px;"><strong>Primary Sets:</strong> ${mInfo.sets} sets · <span style="color:${mInfo.color === '#E8C84A' ? '#925f12' : mInfo.color}; font-weight:600;">${esc(mInfo.label)}</span></p>
-          <p style="margin:2px 0; font-size:11px; color:var(--ink);"><strong>Contributing exercises (primary):</strong> ${contributingStr}</p>
-          <p style="margin:2px 0; font-size:11px; color:var(--muted);"><strong>Secondary involvement (0 set credit):</strong> ${secondaryStr}</p>
+  let statusNoteHtml = "";
+  if (!isTrainedDay) {
+    const hasAnySession = sessionsOnActiveDate.length > 0;
+    if (hasAnySession) {
+      statusNoteHtml = `
+        <div class="boundary-note" style="margin:0 0 10px; background:var(--paper); border-color:var(--line); text-align:left; font-size:11px;">
+          <strong>Detailed muscle tracking not recorded for ${dateLabel(activeDate)}</strong>
+          <p style="margin:2px 0 0;">Sessions on this date are general cardio or legacy entries without canonical muscle mappings. Showing neutral base anatomy (0 sets).</p>
         </div>
       `;
+    } else {
+      statusNoteHtml = `
+        <p class="form-help" style="margin:0 0 8px; font-size:11px; text-align:center; color:var(--muted);">
+          No training recorded for ${dateLabel(activeDate)}. Showing base anatomy (0 sets).
+        </p>
+      `;
     }
-
-    heatmapHtml = `
-      <section class="heatmap-container" aria-label="Daily Muscle Heatmap">
-        <div style="width:100%; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <button type="button" class="button ghost small-button" data-date="-1" aria-label="Previous day">‹</button>
-            <div>
-              <p class="eyebrow" style="margin:0;">DAILY HEATMAP</p>
-              <h3 style="margin:0; font-size:15px;">${dateLabel(activeDate)}</h3>
-            </div>
-            <button type="button" class="button ghost small-button" data-date="1" aria-label="Next day">›</button>
-            ${activeDate !== localDate() ? `<button type="button" class="text-button" id="btn-heatmap-today" style="font-size:11px; margin-left:4px;">Today</button>` : ""}
-          </div>
-          <div class="heatmap-view-toggle">
-            <button type="button" class="${heatmapAnatomyView === 'anterior' ? 'active' : ''}" data-heatmap-view="anterior">Front View</button>
-            <button type="button" class="${heatmapAnatomyView === 'posterior' ? 'active' : ''}" data-heatmap-view="posterior">Back View</button>
-          </div>
-        </div>
-
-        <p class="form-help" style="margin:0 0 8px; font-size:11px; text-align:center;">
-          Tap any muscle region to inspect sets and exercise attributions.
-        </p>
-
-        <div class="heatmap-svg-wrap">
-          ${svgHtml}
-        </div>
-
-        ${inspectCardHtml}
-
-        <div class="heatmap-legend" aria-label="Heatmap intensity legend">
-          <div class="legend-item"><span class="legend-color" style="background:#A7A9A5;"></span> 0 sets (No training)</div>
-          <div class="legend-item"><span class="legend-color" style="background:#E8C84A;"></span> 1–5 (Minimal)</div>
-          <div class="legend-item"><span class="legend-color" style="background:#E98A32;"></span> 6–11 (Moderate)</div>
-          <div class="legend-item"><span class="legend-color" style="background:#D83B43;"></span> 12–19 (Good)</div>
-          <div class="legend-item"><span class="legend-color" style="background:#51406F;"></span> 20+ (Elite)</div>
-        </div>
-        <p class="form-help" style="font-size:10px; margin-top:8px; text-align:center; color:var(--muted);">
-          Thresholds represent logged set volume for this date only, not scientific training quality.
-        </p>
-      </section>
-    `;
   } else {
-    const dateHasWorkouts = sessionsOnActiveDate.length > 0;
-    heatmapHtml = `
-      <section class="heatmap-container" style="text-align:center; padding:18px 14px;" aria-label="Daily Muscle Heatmap Notice">
-        <div style="width:100%; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <button type="button" class="button ghost small-button" data-date="-1" aria-label="Previous day">‹</button>
-            <div style="text-align:left;">
-              <p class="eyebrow" style="margin:0;">DAILY HEATMAP</p>
-              <h3 style="margin:0; font-size:15px;">${dateLabel(activeDate)}</h3>
-            </div>
-            <button type="button" class="button ghost small-button" data-date="1" aria-label="Next day">›</button>
-            ${activeDate !== localDate() ? `<button type="button" class="text-button" id="btn-heatmap-today" style="font-size:11px; margin-left:4px;">Today</button>` : ""}
-          </div>
-          <div class="heatmap-view-toggle">
-            <button type="button" class="${heatmapAnatomyView === 'anterior' ? 'active' : ''}" data-heatmap-view="anterior">Front</button>
-            <button type="button" class="${heatmapAnatomyView === 'posterior' ? 'active' : ''}" data-heatmap-view="posterior">Back</button>
-          </div>
-        </div>
-        ${
-          dateHasWorkouts
-            ? `<div class="boundary-note" style="margin:0; background:var(--paper); border-color:var(--line); text-align:left;">
-                <strong>Muscle heatmap unavailable for this date</strong>
-                <p style="margin:4px 0 0; font-size:11px;">
-                  Sessions logged on this date are legacy workouts, general cardio, or incomplete entries without canonical muscle mappings. A heatmap requires at least one exercise with valid sets and primary muscle attribution.
-                </p>
-              </div>`
-            : `<div class="boundary-note" style="margin:0; background:var(--paper); border-color:var(--line); text-align:left;">
-                <strong>No training recorded for this date</strong>
-                <p style="margin:4px 0 0; font-size:11px;">
-                  Log a session with exercises and sets for ${dateLabel(activeDate)} to generate your daily muscle heatmap.
-                </p>
-              </div>`
-        }
-      </section>
+    statusNoteHtml = `
+      <p class="form-help" style="margin:0 0 8px; font-size:11px; text-align:center;">
+        Tap any muscle region to inspect sets and exercise attributions.
+      </p>
     `;
   }
+
+  const is3DSupported = isWebGLAvailable();
+  const is3DActive = is3DSupported && anatomyDisplayMode === "3d";
+
+  const anatomySelectorHtml = `
+    <div class="anatomy-mode-tabs" role="tablist" aria-label="Anatomy viewer format">
+      <button type="button" class="${is3DActive ? 'active' : ''}" data-anatomy-display="3d">3D Anatomy</button>
+      <button type="button" class="${!is3DActive ? 'active' : ''}" data-anatomy-display="2d">2D Vector</button>
+    </div>
+  `;
+
+  let viewerHtml = "";
+  if (is3DActive) {
+    viewerHtml = `
+      <div id="anatomy-3d-mount"></div>
+    `;
+  } else {
+    viewerHtml = `
+      <div class="heatmap-view-toggle">
+        <button type="button" class="${heatmapAnatomyView === 'anterior' ? 'active' : ''}" data-heatmap-view="anterior">Front View</button>
+        <button type="button" class="${heatmapAnatomyView === 'posterior' ? 'active' : ''}" data-heatmap-view="posterior">Back View</button>
+      </div>
+      <div class="heatmap-svg-wrap">
+        ${svgHtml}
+      </div>
+    `;
+  }
+
+  const heatmapHtml = `
+    <section class="heatmap-container" aria-label="Daily Muscle Heatmap">
+      <div style="width:100%; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <button type="button" class="button ghost small-button" data-date="-1" aria-label="Previous day">‹</button>
+          <div>
+            <p class="eyebrow" style="margin:0;">DAILY HEATMAP</p>
+            <h3 style="margin:0; font-size:15px;">${dateLabel(activeDate)}</h3>
+          </div>
+          <button type="button" class="button ghost small-button" data-date="1" aria-label="Next day">›</button>
+          ${activeDate !== localDate() ? `<button type="button" class="text-button" id="btn-heatmap-today" style="font-size:11px; margin-left:4px;">Today</button>` : ""}
+        </div>
+        ${anatomySelectorHtml}
+      </div>
+
+      ${statusNoteHtml}
+
+      ${viewerHtml}
+
+      <div id="inspect-card-wrap">
+        ${inspectCardHtml}
+      </div>
+
+      <div class="heatmap-legend" aria-label="Heatmap intensity legend">
+        <div class="legend-item"><span class="legend-color" style="background:#A7A9A5;"></span> 0 sets (No training)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#E8C84A;"></span> 1–5 (Minimal)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#E98A32;"></span> 6–11 (Moderate)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#D83B43;"></span> 12–19 (Good)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#51406F;"></span> 20+ (Elite)</div>
+      </div>
+      <p class="form-help" style="font-size:10px; margin-top:8px; text-align:center; color:var(--muted);">
+        Thresholds represent logged set volume for ${dateLabel(activeDate)} only, not scientific training quality.
+      </p>
+    </section>
+  `;
 
   // 2. Estimated Recovery Tracker calculation
   const allRecovery = calculateAllMuscleRecovery(data.workouts, data.recoveryHours, data.recoveryOverrides, new Date());
@@ -700,27 +924,20 @@ function workoutView() {
   `;
 
   return `<main class="screen">
-    <header class="topbar">
-      <div>
-        <p class="eyebrow">TRAINING RECORD</p>
-        <h1>Logged, not <em>directed</em></h1>
-      </div>
-    </header>
-
-    <div class="boundary-note">
-      Your plan stays yours. This screen stores training and cardio records only; it does not alter or recommend workouts. Cardio energy calculations and insights are only presented if you explicitly request them.
-    </div>
-
     ${heatmapHtml}
-
-    ${recoveryHtml}
 
     <section class="section-head" style="margin-top:20px;">
       <div>
-        <p class="eyebrow">SESSIONS</p>
+        <p class="eyebrow">SESSIONS FOR ${dateLabel(activeDate).toUpperCase()}</p>
         <h2>Workout &amp; cardio log</h2>
       </div>
-      <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
+      <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; align-items:center;">
+        <div style="display:flex; align-items:center; gap:4px; margin-right:4px;">
+          <button type="button" class="button ghost small-button" data-date="-1" aria-label="Previous day">‹</button>
+          <span style="font-size:12px; font-weight:600; min-width:80px; text-align:center;">${dateLabel(activeDate)}</span>
+          <button type="button" class="button ghost small-button" data-date="1" aria-label="Next day">›</button>
+          ${activeDate !== localDate() ? `<button type="button" class="text-button" id="btn-session-today" data-action="go-today" style="font-size:11px; margin-left:2px;">Today</button>` : ""}
+        </div>
         <button type="button" class="button ghost small-button" id="toggle-cardio-insight" aria-label="Request cardio insight">Cardio insight</button>
         <button type="button" class="button ghost small-button" data-action="manage-custom-exercises" aria-label="Manage custom exercises">Custom exercises</button>
         <button type="button" class="add-button" data-action="workout">+ Add</button>
@@ -781,9 +998,27 @@ function workoutView() {
               })
               .join("")}
           </div>`
-        : empty("No sessions logged", "Add a record if you want one. Nothing is assumed about your gym plan.", "Add session", "workout_editor")
+        : empty(`No sessions logged for ${dateLabel(activeDate)}`, "Add a record for this day if you want one. Nothing is assumed about your gym plan.", "Add session", "workout_editor", "workout")
     }
+
+    ${recoveryHtml}
   </main>`;
+}
+
+function createDefaultWorkoutSession() {
+  return {
+    id: uid(),
+    date: activeDate,
+    time: "",
+    title: "",
+    type: "Gym",
+    minutes: "",
+    distance: "",
+    note: "",
+    isLegacy: false,
+    createdAt: null,
+    exercises: []
+  };
 }
 
 function openWorkoutEditor(id = null) {
@@ -791,29 +1026,22 @@ function openWorkoutEditor(id = null) {
     const existing = data.workouts.find((w) => w.id === id);
     if (existing) {
       editingWorkoutSession = JSON.parse(JSON.stringify(existing));
+    } else {
+      editingWorkoutSession = createDefaultWorkoutSession();
     }
   } else {
-    editingWorkoutSession = {
-      id: uid(),
-      date: activeDate,
-      time: "",
-      title: "",
-      type: "Gym",
-      minutes: "",
-      distance: "",
-      note: "",
-      isLegacy: false,
-      createdAt: null,
-      exercises: []
-    };
+    editingWorkoutSession = createDefaultWorkoutSession();
   }
   activeView = "workout_editor";
   layout();
 }
+if (typeof window !== "undefined") {
+  window._openWorkoutEditor = openWorkoutEditor;
+}
 
 function workoutEditorView() {
   if (!editingWorkoutSession) {
-    openWorkoutEditor();
+    editingWorkoutSession = createDefaultWorkoutSession();
   }
 
   const session = editingWorkoutSession;
@@ -1315,6 +1543,13 @@ function layout() {
     </nav>
   </div>`;
 
+  if (previousRenderedView !== activeView) {
+    if (typeof window !== "undefined" && typeof window.scrollTo === "function") {
+      window.scrollTo(0, 0);
+    }
+    previousRenderedView = activeView;
+  }
+
   // Hydrate photo thumbnails asynchronously if on todayView or foodView
   if (activeView === "today") {
     const todayEntries = data.entries.filter((x) => x.date === activeDate && x.photoId);
@@ -1346,6 +1581,55 @@ function layout() {
         }
       });
     }
+  }
+
+  // Stage 3: Mount or Dispose 3D Anatomy Viewer
+  if (activeView === "workouts" && anatomyDisplayMode === "3d" && isWebGLAvailable()) {
+    const mountEl = document.getElementById("anatomy-3d-mount");
+    if (mountEl) {
+      if (active3DViewer) {
+        active3DViewer.destroy();
+        active3DViewer = null;
+      }
+      const sessionsOnActiveDate = data.workouts.filter((w) => w.date === activeDate);
+      const heatmapData = calculateDailyHeatmap(sessionsOnActiveDate, DEFAULT_HEATMAP_THRESHOLDS);
+
+      createAnatomy3DViewer(mountEl, {
+        heatmapData,
+        initialPresentationMode: presentationMode3D,
+        initialSplitMode: splitMode3D,
+        inspectedMuscleId,
+        onMuscleSelect: (info) => {
+          inspectedMuscleId = info ? info.muscleId : null;
+          const cardWrap = document.getElementById("inspect-card-wrap");
+          if (cardWrap) {
+            cardWrap.innerHTML = renderInspectCard(inspectedMuscleId, heatmapData);
+          }
+        }
+      }).then((viewer) => {
+        if (viewer && viewer.supported) {
+          active3DViewer = viewer;
+
+          if (initialParams?.get("capture_name")) {
+            const capName = initialParams.get("capture_name");
+            setTimeout(async () => {
+              const canvas = document.querySelector("#a3d-canvas-box canvas");
+              if (canvas) {
+                const dataUrl = canvas.toDataURL("image/png");
+                await fetch("/save-screenshot?name=" + capName, {
+                  method: "POST",
+                  body: dataUrl
+                });
+                console.log("Saved capture: " + capName);
+              }
+            }, 800);
+          }
+        }
+      });
+    }
+  } else if (activeView !== "workouts" && active3DViewer) {
+    active3DViewer.destroy();
+    active3DViewer = null;
   }
 }
 
@@ -1381,10 +1665,28 @@ function csv(rows) {
 }
 
 // ---------------- EVENT BUS ----------------
-app.addEventListener("click", (event) => {
+document.addEventListener("click", (event) => {
+  // Modal close on backdrop or X button
+  if (event.target.closest("[data-close-modal]")) {
+    document.querySelector(".modal-backdrop")?.remove();
+    return;
+  }
+  if (event.target.closest("[data-action='reset-recovery-defaults']")) {
+    data.recoveryHours = {};
+    persist();
+    document.querySelector(".modal-backdrop")?.remove();
+    layout();
+    return;
+  }
+
   const nav = event.target.closest("[data-nav]");
   if (nav) {
-    activeView = nav.dataset.nav;
+    const targetNav = nav.dataset.nav;
+    if (targetNav === "workout_editor") {
+      openWorkoutEditor();
+      return;
+    }
+    activeView = targetNav;
     editId = null;
     layout();
     return;
@@ -1424,12 +1726,29 @@ app.addEventListener("click", (event) => {
       openModal("custom_exercises_manager");
     } else if (action.dataset.action === "close-inspect") {
       inspectedMuscleId = null;
-      layout();
+      if (active3DViewer) {
+        active3DViewer.updateState({ inspectedMuscleId: null });
+      }
+      const cardWrap = document.getElementById("inspect-card-wrap");
+      if (cardWrap) {
+        cardWrap.innerHTML = "";
+      } else {
+        layout();
+      }
+      return;
     } else if (action.dataset.action === "manage-recovery-durations") {
       openModal("recovery_config");
     } else {
       openModal(action.dataset.action);
     }
+    return;
+  }
+
+  // 3D vs 2D Anatomy View Mode Toggle
+  const anatomyDisplayToggle = event.target.closest("[data-anatomy-display]");
+  if (anatomyDisplayToggle) {
+    anatomyDisplayMode = anatomyDisplayToggle.dataset.anatomyDisplay;
+    layout();
     return;
   }
 
@@ -1441,8 +1760,14 @@ app.addEventListener("click", (event) => {
     return;
   }
 
-  // Jump to today in heatmap
-  if (event.target.id === "btn-heatmap-today") {
+  // Jump to today in heatmap or sessions header
+  if (
+    event.target.id === "btn-heatmap-today" ||
+    event.target.closest("#btn-heatmap-today") ||
+    event.target.id === "btn-session-today" ||
+    event.target.closest("#btn-session-today") ||
+    event.target.closest("[data-action='go-today']")
+  ) {
     activeDate = localDate();
     layout();
     return;
@@ -1457,6 +1782,48 @@ app.addEventListener("click", (event) => {
     } else {
       inspectedMuscleId = muscleId;
     }
+    layout();
+    return;
+  }
+
+  // Progress metric switch
+  const progressMetricBtn = event.target.closest("[data-progress-metric]");
+  if (progressMetricBtn) {
+    progressMetric = progressMetricBtn.dataset.progressMetric;
+    layout();
+    return;
+  }
+
+  // Progress range switch
+  const progressRangeBtn = event.target.closest("[data-progress-range]");
+  if (progressRangeBtn) {
+    progressRange = Number(progressRangeBtn.dataset.progressRange) || 7;
+    layout();
+    return;
+  }
+
+  // Progress day selection / toggle
+  const progressDayBtn = event.target.closest("[data-progress-day]");
+  if (progressDayBtn) {
+    const tapped = progressDayBtn.dataset.progressDay;
+    selectedProgressDate = selectedProgressDate === tapped ? null : tapped;
+    layout();
+    return;
+  }
+
+  // Close progress day inspector
+  if (event.target.closest("[data-close-progress-inspect]")) {
+    selectedProgressDate = null;
+    layout();
+    return;
+  }
+
+  // Nav day directly to Today or Training tab
+  const navDay = event.target.closest("[data-nav-day]");
+  if (navDay) {
+    activeDate = navDay.dataset.date;
+    activeView = navDay.dataset.navDay;
+    editId = null;
     layout();
     return;
   }
@@ -1769,23 +2136,8 @@ app.addEventListener("click", (event) => {
   }
 });
 
-// Modal close on backdrop or X button
-document.addEventListener("click", (event) => {
-  if (event.target.closest("[data-close-modal]")) {
-    document.querySelector(".modal-backdrop")?.remove();
-    return;
-  }
-  if (event.target.closest("[data-action='reset-recovery-defaults']")) {
-    data.recoveryHours = {};
-    persist();
-    document.querySelector(".modal-backdrop")?.remove();
-    layout();
-    return;
-  }
-});
-
 // Non-destructive targeted update for food estimation input without full DOM re-render
-app.addEventListener("input", (event) => {
+document.addEventListener("input", (event) => {
   if (event.target.id === "food-name") {
     const val = event.target.value;
     const est = estimateFood(val, data.customFoods);
@@ -1842,7 +2194,7 @@ app.addEventListener("input", (event) => {
   }
 });
 
-app.addEventListener("change", (event) => {
+document.addEventListener("change", (event) => {
   if (event.target.id === "active-date") {
     activeDate = event.target.value;
     layout();
@@ -2206,7 +2558,18 @@ document.addEventListener("submit", async (event) => {
 
 // PWA Service Worker Registration
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js").catch((err) => console.log("SW reg failed", err));
+  if (typeof location !== "undefined" && (location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
+    navigator.serviceWorker.getRegistrations().then((regs) => {
+      for (const reg of regs) reg.unregister();
+    });
+    if ("caches" in window) {
+      caches.keys().then((keys) => {
+        for (const k of keys) caches.delete(k);
+      });
+    }
+  } else {
+    navigator.serviceWorker.register("/sw.js").catch((err) => console.log("SW reg failed", err));
+  }
 }
 
 // Initial Layout

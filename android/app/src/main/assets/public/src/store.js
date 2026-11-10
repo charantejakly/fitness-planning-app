@@ -271,6 +271,143 @@ export function weeklySummary(entries, today = localDate()) {
   };
 }
 
+// Computes comprehensive multi-domain progress analytics across food, workouts, and measurements
+export function calculateProgressAnalytics(appData, endDate = localDate(), rangeDays = 7) {
+  const days = [];
+  const cursor = new Date(`${endDate}T12:00:00`);
+  for (let i = rangeDays - 1; i >= 0; i--) {
+    const d = new Date(cursor);
+    d.setDate(d.getDate() - i);
+    days.push(localDate(d));
+  }
+
+  let totalCalories = 0;
+  let totalProtein = 0;
+  let totalCarbs = 0;
+  let totalFat = 0;
+  let foodLoggedDays = 0;
+
+  let totalWorkouts = 0;
+  let totalSets = 0;
+  let totalMinutes = 0;
+  let workoutLoggedDays = 0;
+  let bothLoggedDays = 0;
+  let completedDaysCount = 0;
+
+  const muscleSetsMap = {};
+
+  const entries = appData?.entries || [];
+  const workouts = appData?.workouts || [];
+  const measurements = appData?.measurements || [];
+  const completedDays = appData?.completedDays || [];
+
+  const dayStats = days.map((date) => {
+    const dayEntries = entries.filter((x) => x.date === date);
+    const dayWorkouts = workouts.filter((x) => x.date === date);
+    const dayMeasurements = measurements.filter((x) => x.date === date);
+    const isCompleted = completedDays.includes(date);
+
+    const totals = nutrition(dayEntries);
+    const hasFood = dayEntries.length > 0;
+    const hasWorkout = dayWorkouts.length > 0;
+
+    if (hasFood) {
+      totalCalories += totals.calories;
+      totalProtein += totals.protein;
+      totalCarbs += totals.carbs;
+      totalFat += totals.fat;
+      foodLoggedDays += 1;
+    }
+
+    let daySets = 0;
+    let dayMinutes = 0;
+    let dayDistance = 0;
+    const dayMuscles = new Set();
+    const workoutTitles = [];
+
+    if (hasWorkout) {
+      workoutLoggedDays += 1;
+      totalWorkouts += dayWorkouts.length;
+      for (const w of dayWorkouts) {
+        if (w.title) workoutTitles.push(w.title);
+        dayMinutes += Number(w.minutes || 0);
+        dayDistance += Number(w.distance || 0);
+        for (const ex of w.exercises || []) {
+          const validSets = (ex.sets || []).filter((s) => s && Number(s.reps) > 0).length;
+          daySets += validSets;
+          for (const mId of ex.muscleMapping?.primary || []) {
+            dayMuscles.add(mId);
+            muscleSetsMap[mId] = (muscleSetsMap[mId] || 0) + validSets;
+          }
+        }
+      }
+      totalSets += daySets;
+      totalMinutes += dayMinutes;
+    }
+
+    if (hasFood && hasWorkout) {
+      bothLoggedDays += 1;
+    }
+    if (isCompleted) {
+      completedDaysCount += 1;
+    }
+
+    const latestWeight = dayMeasurements.length ? dayMeasurements[dayMeasurements.length - 1].weight : null;
+    const latestWaist = dayMeasurements.length ? dayMeasurements[dayMeasurements.length - 1].waist : null;
+
+    const weekdayNarrow = new Intl.DateTimeFormat("en-IN", { weekday: "narrow" }).format(new Date(`${date}T12:00:00`));
+    const weekdayShort = new Intl.DateTimeFormat("en-IN", { weekday: "short" }).format(new Date(`${date}T12:00:00`));
+
+    return {
+      date,
+      weekdayNarrow,
+      weekdayShort,
+      hasFood,
+      hasWorkout,
+      hasBoth: hasFood && hasWorkout,
+      isCompleted,
+      totals,
+      entryCount: dayEntries.length,
+      entries: dayEntries,
+      workouts: dayWorkouts,
+      workoutCount: dayWorkouts.length,
+      workoutTitles,
+      sets: daySets,
+      minutes: dayMinutes,
+      distance: dayDistance,
+      primaryMuscles: Array.from(dayMuscles),
+      weight: latestWeight,
+      waist: latestWaist
+    };
+  });
+
+  const avgCalories = foodLoggedDays ? Math.round(totalCalories / foodLoggedDays) : null;
+  const avgProtein = foodLoggedDays ? Math.round(totalProtein / foodLoggedDays) : null;
+  const avgCarbs = foodLoggedDays ? Math.round(totalCarbs / foodLoggedDays) : null;
+  const avgFat = foodLoggedDays ? Math.round(totalFat / foodLoggedDays) : null;
+
+  const topMuscles = Object.entries(muscleSetsMap)
+    .map(([id, sets]) => ({ id, sets }))
+    .sort((a, b) => b.sets - a.sets);
+
+  return {
+    days: dayStats,
+    rangeDays,
+    foodLoggedDays,
+    workoutLoggedDays,
+    bothLoggedDays,
+    completedDaysCount,
+    avgCalories,
+    avgProtein,
+    avgCarbs,
+    avgFat,
+    totalWorkouts,
+    totalSets,
+    totalMinutes,
+    topMuscles
+  };
+}
+
 // Merge new imported data into existing data avoiding duplicate IDs
 export function mergeData(existing, incoming) {
   const migratedIncoming = migrateData(incoming);

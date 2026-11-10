@@ -687,13 +687,73 @@ button {
   margin: 0 0 10px;
 }
 
-.chart {
-  height: 115px;
+.chart-controls {
   display: flex;
-  gap: 9px;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.chart-pill-group {
+  display: flex;
+  gap: 4px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.chart-pill-group button {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font: 600 11px 'DM Sans', sans-serif;
+  padding: 5px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.chart-pill-group button.active {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.chart-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.chart-target-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed rgba(121, 149, 107, 0.6);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.chart-target-line span {
+  position: absolute;
+  right: 4px;
+  top: -14px;
+  font: 9px 'DM Mono', monospace;
+  color: var(--muted);
+  background: var(--card);
+  padding: 0 2px;
+}
+
+.chart {
+  height: 125px;
+  display: flex;
+  gap: 6px;
   align-items: end;
   border-bottom: 1px solid var(--line);
   padding: 0 4px;
+  position: relative;
 }
 
 .day-bar {
@@ -703,19 +763,129 @@ button {
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  gap: 7px;
+  gap: 3px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  outline: none;
+  position: relative;
+  transition: transform 0.15s ease;
+  user-select: none;
+}
+
+.day-bar:hover,
+.day-bar:focus {
+  transform: translateY(-2px);
+}
+
+.day-bar:hover span,
+.day-bar:focus span {
+  filter: brightness(1.15);
+}
+
+.day-bar.selected span {
+  box-shadow: 0 0 0 2px var(--ink);
+  filter: brightness(1.2);
+}
+
+.day-bar.selected small {
+  font-weight: 700;
+  color: var(--ink);
 }
 
 .day-bar span {
   width: 100%;
-  min-height: 2px;
-  border-radius: 5px 5px 0 0;
+  min-height: 3px;
+  border-radius: 4px 4px 0 0;
   background: #79956b;
+  transition: height 0.2s ease, background 0.2s ease;
 }
 
 .day-bar small {
   font: 10px 'DM Mono', monospace;
   color: var(--muted);
+}
+
+.day-bar-val {
+  font: 9px 'DM Mono', monospace;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+.day-bar-indicators {
+  display: flex;
+  gap: 2px;
+  height: 6px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.day-bar-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #79956b;
+}
+
+.day-bar-dot.workout {
+  background: #e98a32;
+}
+
+.day-bar-dot.complete {
+  background: #51406f;
+}
+
+.day-inspect-card {
+  width: 100%;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  margin-top: 14px;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.analytics-cell {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.analytics-cell span {
+  font: 10px 'DM Mono', monospace;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.analytics-cell b {
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.tag-badge {
+  display: inline-block;
+  font: 600 11px 'DM Sans', sans-serif;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  margin-right: 4px;
+  margin-top: 4px;
 }
 
 .weekly-stats {
@@ -1199,14 +1369,20 @@ button {
   border: 1px solid var(--line);
   border-radius: 16px;
   padding: 16px;
-  margin-bottom: 16px;
+  margin-top: 4px;
+  margin-bottom: 20px;
 }
 
 .heatmap-svg-wrap {
-  width: 220px;
+  width: 320px;
   max-width: 100%;
-  margin: 10px auto;
+  aspect-ratio: 500 / 1024;
+  margin: 12px auto;
   position: relative;
+  background: radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.9) 0%, rgba(235, 237, 230, 0.5) 100%);
+  border-radius: 12px;
+  padding: 8px 4px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
 }
 
 .anatomy-svg {
@@ -1214,28 +1390,59 @@ button {
   height: auto;
   display: block;
   user-select: none;
+  filter: drop-shadow(0 4px 12px rgba(13, 23, 18, 0.12));
+}
+
+.anatomy-svg image {
+  filter: contrast(1.15) brightness(1.02);
 }
 
 .muscle-group {
   cursor: pointer;
-  transition: opacity 0.15s ease, filter 0.15s ease;
+  transition: opacity 0.18s ease, filter 0.18s ease;
   outline: none;
 }
 
+.muscle-path {
+  pointer-events: all;
+  mix-blend-mode: multiply;
+  stroke: rgba(13, 23, 18, 0.25);
+  stroke-width: 0.6px;
+  stroke-linejoin: round;
+  transition: fill-opacity 0.18s ease, stroke 0.18s ease, stroke-width 0.18s ease;
+}
+
+.muscle-group.is-trained .muscle-path {
+  stroke: rgba(13, 23, 18, 0.5);
+  stroke-width: 0.8px;
+}
+
 .muscle-group:hover {
-  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.4));
+  filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.55));
+}
+
+.muscle-group:hover .muscle-path {
+  fill-opacity: 0.82 !important;
+  stroke: #0d1712 !important;
+  stroke-width: 1.6px !important;
 }
 
 .muscle-group:focus-visible {
-  filter: drop-shadow(0 0 4px #2e5318);
+  filter: drop-shadow(0 0 6px #2e5318);
+}
+
+.muscle-group.is-selected {
+  filter: drop-shadow(0 0 8px rgba(13, 23, 18, 0.65));
 }
 
 .muscle-group.is-selected path,
 .muscle-group.is-selected rect {
-  stroke: var(--ink) !important;
-  stroke-width: 2.2px !important;
-  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.45));
+  stroke: #0d1712 !important;
+  stroke-width: 2.6px !important;
+  stroke-linejoin: round !important;
+  fill-opacity: 0.88 !important;
 }
+
 
 .heatmap-legend {
   display: flex;
@@ -1395,5 +1602,201 @@ button {
   align-items: center;
 }
 
+/* ==========================================================================
+   STAGE 3: 3D DUAL ANATOMY VIEWER STYLES
+   ========================================================================== */
 
+.anatomy-mode-tabs {
+  display: flex;
+  gap: 6px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 3px;
+  margin-bottom: 12px;
+}
+
+.anatomy-mode-tabs button {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font: 600 12px 'DM Sans', sans-serif;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.anatomy-mode-tabs button.active {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.anatomy-3d-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  height: 480px;
+  margin: 10px auto;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #0a100d;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  user-select: none;
+}
+
+.anatomy-3d-canvas-mount {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.anatomy-3d-canvas-mount canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  outline: none;
+}
+
+.anatomy-3d-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(13, 23, 18, 0.92);
+  color: #c9f25b;
+  border: 1px solid rgba(201, 242, 91, 0.3);
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.anatomy-3d-topbar {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.anatomy-3d-pill-group,
+.anatomy-3d-split-group {
+  display: flex;
+  gap: 4px;
+  background: rgba(13, 23, 18, 0.88);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 3px;
+  pointer-events: auto;
+}
+
+.a3d-pill {
+  border: none;
+  background: transparent;
+  color: #8c9690;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.2;
+}
+
+.a3d-pill:hover {
+  color: #fff;
+}
+
+.a3d-pill.active {
+  background: #243c2f;
+  color: #c9f25b;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.a3d-subpill {
+  border: none;
+  background: transparent;
+  color: #8c9690;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.a3d-subpill:hover {
+  color: #fff;
+}
+
+.a3d-subpill.active {
+  background: #2e4d3c;
+  color: #c9f25b;
+}
+
+.anatomy-3d-botbar {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  background: rgba(13, 23, 18, 0.88);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 4px;
+  z-index: 10;
+}
+
+.a3d-btn-cam {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #18281f;
+  color: #e5ece7;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 5px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.a3d-btn-cam:hover {
+  background: #243c2f;
+  border-color: #c9f25b;
+  color: #fff;
+}
+
+.a3d-btn-cam.active {
+  background: #2e4d3c;
+  border-color: #c9f25b;
+  color: #c9f25b;
+}
+
+@media (max-width: 480px) {
+  .anatomy-3d-wrapper {
+    height: 420px;
+    border-radius: 10px;
+  }
+  .a3d-pill {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+  .a3d-btn-cam {
+    font-size: 9.5px;
+    padding: 4px 6px;
+  }
+}
 

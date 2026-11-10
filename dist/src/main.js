@@ -41,6 +41,7 @@ import {
   calculateMuscleRecovery,
   calculateAllMuscleRecovery
 } from "./recovery.js";
+import { createAnatomy3DViewer, isWebGLAvailable } from "./anatomy-3d.js";
 
 let data = loadData();
 let activeDate = localDate();
@@ -57,10 +58,24 @@ let pickerSearchQuery = "";
 let editingExerciseMusclesIndex = null;
 let editingCustomExerciseId = null;
 
-// Phase 2 Heatmap State
+// URL parameter initialization (for deep-linking & testing)
+const initialParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+
+// Heatmap & 3D Anatomy State
+let anatomyDisplayMode = initialParams?.get("anatomy") || "3d"; // "3d" (default) | "2d" (fallback/toggle)
+let active3DViewer = null;
+let presentationMode3D = initialParams?.get("mode") || "full"; // "full" (Mode A default) | "half" (Mode B)
+let splitMode3D = initialParams?.get("split") || "world"; // "world" (True Sagittal) | "camera" (View-Aligned)
 let heatmapAnatomyView = "anterior"; // "anterior" | "posterior"
-let inspectedMuscleId = null;
+let inspectedMuscleId = initialParams?.get("inspect") || null;
 let previousRenderedView = null;
+
+if (initialParams?.get("view")) {
+  activeView = initialParams.get("view");
+}
+if (initialParams?.get("date")) {
+  activeDate = initialParams.get("date");
+}
 
 // Progress & Analytics interactive state
 let progressMetric = "calories"; // "calories" | "protein" | "sets" | "minutes"
@@ -695,6 +710,44 @@ function detailedBadgeText(w) {
   return `${muscleSummary || "Detailed"} · ${totalSets} set${totalSets === 1 ? "" : "s"}`;
 }
 
+function renderInspectCard(mId, heatmapData) {
+  if (!mId) return "";
+  const isTrainedDay = heatmapData !== null && heatmapData.muscles;
+  const mInfo = isTrainedDay && heatmapData.muscles[mId]
+    ? heatmapData.muscles[mId]
+    : null;
+
+  const catItem = CANONICAL_CATALOG.find((c) => c.id === mId);
+  const muscleName = mInfo ? mInfo.name : (catItem ? catItem.name : mId);
+  const viewHint = catItem ? ` (${catItem.view === 'both' ? 'Front & Back' : catItem.view === 'anterior' ? 'Front view' : 'Back view'})` : "";
+  const sets = mInfo ? mInfo.sets : 0;
+  const label = mInfo ? mInfo.label : "No training";
+  const color = mInfo ? mInfo.color : "#A7A9A5";
+
+  const contributingStr = mInfo && mInfo.contributingExercises.length
+    ? mInfo.contributingExercises.map((e) => typeof e === "object" ? `${esc(e.exerciseName)} (${e.sets} set${e.sets === 1 ? "" : "s"})` : esc(e)).join(", ")
+    : "None (0 direct sets)";
+  const secondaryStr = mInfo && mInfo.secondaryInvolvement.length
+    ? mInfo.secondaryInvolvement.map((e) => esc(e)).join(", ")
+    : "None";
+
+  return `
+    <div class="muscle-inspect-card" role="region" aria-label="Inspected muscle details">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="legend-color" style="background:${color}; width:14px; height:14px;"></span>
+          <strong style="font-size:14px;">${esc(muscleName)}</strong>
+          <small style="color:var(--muted); font-size:11px;">${viewHint}</small>
+        </div>
+        <button type="button" class="button ghost small-button" data-action="close-inspect" aria-label="Close muscle details">✕</button>
+      </div>
+      <p style="margin:6px 0 2px; font-size:12px;"><strong>Primary Sets:</strong> ${sets} sets · <span style="color:${color === '#E8C84A' ? '#925f12' : color}; font-weight:600;">${esc(label)}</span></p>
+      <p style="margin:2px 0; font-size:11px; color:var(--ink);"><strong>Contributing exercises (primary):</strong> ${contributingStr}</p>
+      <p style="margin:2px 0; font-size:11px; color:var(--muted);"><strong>Secondary involvement (0 set credit):</strong> ${secondaryStr}</p>
+    </div>
+  `;
+}
+
 function workoutView() {
   // 1. Daily Heatmap calculation for activeDate
   const sessionsOnActiveDate = data.workouts.filter((w) => w.date === activeDate);
@@ -707,42 +760,7 @@ function workoutView() {
     ? renderPosteriorSvg(muscleMap, { selectedMuscle: inspectedMuscleId })
     : renderAnteriorSvg(muscleMap, { selectedMuscle: inspectedMuscleId });
 
-  let inspectCardHtml = "";
-  if (inspectedMuscleId) {
-    const mInfo = isTrainedDay && heatmapData.muscles[inspectedMuscleId]
-      ? heatmapData.muscles[inspectedMuscleId]
-      : null;
-
-    const catItem = CANONICAL_CATALOG.find((c) => c.id === inspectedMuscleId);
-    const muscleName = mInfo ? mInfo.name : (catItem ? catItem.name : inspectedMuscleId);
-    const viewHint = catItem ? ` (${catItem.view === 'both' ? 'Front & Back' : catItem.view === 'anterior' ? 'Front view' : 'Back view'})` : "";
-    const sets = mInfo ? mInfo.sets : 0;
-    const label = mInfo ? mInfo.label : "No training";
-    const color = mInfo ? mInfo.color : "#A7A9A5";
-
-    const contributingStr = mInfo && mInfo.contributingExercises.length
-      ? mInfo.contributingExercises.map((e) => typeof e === "object" ? `${esc(e.exerciseName)} (${e.sets} set${e.sets === 1 ? "" : "s"})` : esc(e)).join(", ")
-      : "None (0 direct sets)";
-    const secondaryStr = mInfo && mInfo.secondaryInvolvement.length
-      ? mInfo.secondaryInvolvement.map((e) => esc(e)).join(", ")
-      : "None";
-
-    inspectCardHtml = `
-      <div class="muscle-inspect-card" role="region" aria-label="Inspected muscle details">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span class="legend-color" style="background:${color}; width:14px; height:14px;"></span>
-            <strong style="font-size:14px;">${esc(muscleName)}</strong>
-            <small style="color:var(--muted); font-size:11px;">${viewHint}</small>
-          </div>
-          <button type="button" class="button ghost small-button" data-action="close-inspect" aria-label="Close muscle details">✕</button>
-        </div>
-        <p style="margin:6px 0 2px; font-size:12px;"><strong>Primary Sets:</strong> ${sets} sets · <span style="color:${color === '#E8C84A' ? '#925f12' : color}; font-weight:600;">${esc(label)}</span></p>
-        <p style="margin:2px 0; font-size:11px; color:var(--ink);"><strong>Contributing exercises (primary):</strong> ${contributingStr}</p>
-        <p style="margin:2px 0; font-size:11px; color:var(--muted);"><strong>Secondary involvement (0 set credit):</strong> ${secondaryStr}</p>
-      </div>
-    `;
-  }
+  const inspectCardHtml = renderInspectCard(inspectedMuscleId, heatmapData);
 
   let statusNoteHtml = "";
   if (!isTrainedDay) {
@@ -769,9 +787,36 @@ function workoutView() {
     `;
   }
 
+  const is3DSupported = isWebGLAvailable();
+  const is3DActive = is3DSupported && anatomyDisplayMode === "3d";
+
+  const anatomySelectorHtml = `
+    <div class="anatomy-mode-tabs" role="tablist" aria-label="Anatomy viewer format">
+      <button type="button" class="${is3DActive ? 'active' : ''}" data-anatomy-display="3d">3D Anatomy</button>
+      <button type="button" class="${!is3DActive ? 'active' : ''}" data-anatomy-display="2d">2D Vector</button>
+    </div>
+  `;
+
+  let viewerHtml = "";
+  if (is3DActive) {
+    viewerHtml = `
+      <div id="anatomy-3d-mount"></div>
+    `;
+  } else {
+    viewerHtml = `
+      <div class="heatmap-view-toggle">
+        <button type="button" class="${heatmapAnatomyView === 'anterior' ? 'active' : ''}" data-heatmap-view="anterior">Front View</button>
+        <button type="button" class="${heatmapAnatomyView === 'posterior' ? 'active' : ''}" data-heatmap-view="posterior">Back View</button>
+      </div>
+      <div class="heatmap-svg-wrap">
+        ${svgHtml}
+      </div>
+    `;
+  }
+
   const heatmapHtml = `
     <section class="heatmap-container" aria-label="Daily Muscle Heatmap">
-      <div style="width:100%; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+      <div style="width:100%; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
         <div style="display:flex; align-items:center; gap:8px;">
           <button type="button" class="button ghost small-button" data-date="-1" aria-label="Previous day">‹</button>
           <div>
@@ -781,19 +826,16 @@ function workoutView() {
           <button type="button" class="button ghost small-button" data-date="1" aria-label="Next day">›</button>
           ${activeDate !== localDate() ? `<button type="button" class="text-button" id="btn-heatmap-today" style="font-size:11px; margin-left:4px;">Today</button>` : ""}
         </div>
-        <div class="heatmap-view-toggle">
-          <button type="button" class="${heatmapAnatomyView === 'anterior' ? 'active' : ''}" data-heatmap-view="anterior">Front View</button>
-          <button type="button" class="${heatmapAnatomyView === 'posterior' ? 'active' : ''}" data-heatmap-view="posterior">Back View</button>
-        </div>
+        ${anatomySelectorHtml}
       </div>
 
       ${statusNoteHtml}
 
-      <div class="heatmap-svg-wrap">
-        ${svgHtml}
-      </div>
+      ${viewerHtml}
 
-      ${inspectCardHtml}
+      <div id="inspect-card-wrap">
+        ${inspectCardHtml}
+      </div>
 
       <div class="heatmap-legend" aria-label="Heatmap intensity legend">
         <div class="legend-item"><span class="legend-color" style="background:#A7A9A5;"></span> 0 sets (No training)</div>
@@ -1540,6 +1582,55 @@ function layout() {
       });
     }
   }
+
+  // Stage 3: Mount or Dispose 3D Anatomy Viewer
+  if (activeView === "workouts" && anatomyDisplayMode === "3d" && isWebGLAvailable()) {
+    const mountEl = document.getElementById("anatomy-3d-mount");
+    if (mountEl) {
+      if (active3DViewer) {
+        active3DViewer.destroy();
+        active3DViewer = null;
+      }
+      const sessionsOnActiveDate = data.workouts.filter((w) => w.date === activeDate);
+      const heatmapData = calculateDailyHeatmap(sessionsOnActiveDate, DEFAULT_HEATMAP_THRESHOLDS);
+
+      createAnatomy3DViewer(mountEl, {
+        heatmapData,
+        initialPresentationMode: presentationMode3D,
+        initialSplitMode: splitMode3D,
+        inspectedMuscleId,
+        onMuscleSelect: (info) => {
+          inspectedMuscleId = info ? info.muscleId : null;
+          const cardWrap = document.getElementById("inspect-card-wrap");
+          if (cardWrap) {
+            cardWrap.innerHTML = renderInspectCard(inspectedMuscleId, heatmapData);
+          }
+        }
+      }).then((viewer) => {
+        if (viewer && viewer.supported) {
+          active3DViewer = viewer;
+
+          if (initialParams?.get("capture_name")) {
+            const capName = initialParams.get("capture_name");
+            setTimeout(async () => {
+              const canvas = document.querySelector("#a3d-canvas-box canvas");
+              if (canvas) {
+                const dataUrl = canvas.toDataURL("image/png");
+                await fetch("/save-screenshot?name=" + capName, {
+                  method: "POST",
+                  body: dataUrl
+                });
+                console.log("Saved capture: " + capName);
+              }
+            }, 800);
+          }
+        }
+      });
+    }
+  } else if (activeView !== "workouts" && active3DViewer) {
+    active3DViewer.destroy();
+    active3DViewer = null;
+  }
 }
 
 function openModal(kind, id = null) {
@@ -1635,12 +1726,29 @@ document.addEventListener("click", (event) => {
       openModal("custom_exercises_manager");
     } else if (action.dataset.action === "close-inspect") {
       inspectedMuscleId = null;
-      layout();
+      if (active3DViewer) {
+        active3DViewer.updateState({ inspectedMuscleId: null });
+      }
+      const cardWrap = document.getElementById("inspect-card-wrap");
+      if (cardWrap) {
+        cardWrap.innerHTML = "";
+      } else {
+        layout();
+      }
+      return;
     } else if (action.dataset.action === "manage-recovery-durations") {
       openModal("recovery_config");
     } else {
       openModal(action.dataset.action);
     }
+    return;
+  }
+
+  // 3D vs 2D Anatomy View Mode Toggle
+  const anatomyDisplayToggle = event.target.closest("[data-anatomy-display]");
+  if (anatomyDisplayToggle) {
+    anatomyDisplayMode = anatomyDisplayToggle.dataset.anatomyDisplay;
+    layout();
     return;
   }
 

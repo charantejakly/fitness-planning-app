@@ -1,4 +1,4 @@
-const CACHE = "lean-mode-v8";
+const CACHE = "lean-mode-v15";
 const ASSETS = [
   "/",
   "/index.html",
@@ -8,19 +8,28 @@ const ASSETS = [
   "/src/idb.js",
   "/src/muscle-data.js",
   "/src/anatomy-svg.js",
+  "/src/anatomy-3d.js",
   "/src/heatmap.js",
   "/src/recovery.js",
   "/src/style.css",
   "/manifest.webmanifest",
-  "/icon.svg"
+  "/icon.svg",
+  "/assets/anatomy/front.png",
+  "/assets/anatomy/back.png",
+  "/assets/models/lean-mode-muscles.glb",
+  "/assets/models/human-body-surface.glb",
+  "/assets/models/human-skull.glb",
+  "/assets/models/muscle-model-map.json",
+  "/src/vendor/three/build/three.module.js",
+  "/src/vendor/three/controls/OrbitControls.js",
+  "/src/vendor/three/loaders/GLTFLoader.js",
+  "/src/vendor/three/utils/BufferGeometryUtils.js"
 ];
 
 self.addEventListener("install", (event) => {
+  self.skipWaiting();
   event.waitUntil(
-    caches
-      .open(CACHE)
-      .then((cache) => cache.addAll(ASSETS))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE).then((cache) => cache.addAll(ASSETS))
   );
 });
 
@@ -34,24 +43,16 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  const url = new URL(event.request.url);
-
-  // If navigating to another page/route, fall back to /index.html from cache
-  if (event.request.mode === "navigate") {
-    event.respondWith(
-      caches.match(event.request).then((cached) => cached || caches.match("/index.html") || fetch(event.request))
-    );
-    return;
-  }
-
-  // Cache-first for local static assets
+  // Network-first strategy: always fetch freshest assets from server when reachable
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).catch((err) => {
-        // Return empty response for non-critical assets if offline
-        return new Response("", { status: 408, statusText: "Offline" });
-      });
-    })
+    fetch(event.request)
+      .then((response) => {
+        if (response && response.status === 200 && event.request.method === "GET") {
+          const clone = response.clone();
+          caches.open(CACHE).then((cache) => cache.put(event.request, clone));
+        }
+        return response;
+      })
+      .catch(() => caches.match(event.request).then((cached) => cached || (event.request.mode === "navigate" ? caches.match("/index.html") : new Response("", { status: 408, statusText: "Offline" }))))
   );
 });

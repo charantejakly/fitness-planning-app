@@ -1,0 +1,1466 @@
+﻿{
+    "Quadriceps":  [
+                       {
+                           "partId":  "FJ1433",
+                           "name":  "Right rectus femoris",
+                           "side":  "right",
+                           "vertexCount":  910,
+                           "conceptId":  "FMA38928",
+                           "triangleCount":  1250
+                       },
+                       {
+                           "partId":  "FJ1433M",
+                           "name":  "Left rectus femoris",
+                           "side":  "left",
+                           "vertexCount":  918,
+                           "conceptId":  "FMA38929",
+                           "triangleCount":  1250
+                       },
+                       {
+                           "partId":  "FJ1441",
+                           "name":  "Right vastus intermedius",
+                           "side":  "right",
+                           "vertexCount":  840,
+                           "conceptId":  "FMA38934",
+                           "triangleCount":  936
+                       },
+                       {
+                           "partId":  "FJ1441M",
+                           "name":  "Left vastus intermedius",
+                           "side":  "left",
+                           "vertexCount":  839,
+                           "conceptId":  "FMA38935",
+                           "triangleCount":  936
+                       },
+                       {
+                           "partId":  "FJ1442",
+                           "name":  "Right vastus lateralis",
+                           "side":  "right",
+                           "vertexCount":  1091,
+                           "conceptId":  "FMA38930",
+                           "triangleCount":  1470
+                       },
+                       {
+                           "partId":  "FJ1442M",
+                           "name":  "Left vastus lateralis",
+                           "side":  "left",
+                           "vertexCount":  1080,
+                           "conceptId":  "FMA38931",
+                           "triangleCount":  1470
+                       },
+                       {
+                           "partId":  "FJ1443",
+                           "name":  "Right vastus medialis",
+                           "side":  "right",
+                           "vertexCount":  784,
+                           "conceptId":  "FMA38932",
+                           "triangleCount":  1000
+                       },
+                       {
+                           "partId":  "FJ1443M",
+                           "name":  "Left vastus medialis",
+                           "side":  "left",
+                           "vertexCount":  776,
+                           "conceptId":  "FMA38933",
+                           "triangleCount":  1000
+                       }
+                   ],
+    "Obliques":  [
+                     {
+                         "partId":  "FJ1452",
+                         "name":  "Right external oblique",
+                         "side":  "right",
+                         "vertexCount":  17145,
+                         "conceptId":  "FMA13336",
+                         "triangleCount":  24600
+                     },
+                     {
+                         "partId":  "FJ1452M",
+                         "name":  "Left external oblique",
+                         "side":  "left",
+                         "vertexCount":  17116,
+                         "conceptId":  "FMA13337",
+                         "triangleCount":  24600
+                     }
+                 ],
+    "LowerBack":  [
+                      {
+                          "partId":  "FJ1526",
+                          "name":  "Right iliocostalis cervicis",
+                          "side":  "right",
+                          "vertexCount":  988,
+                          "conceptId":  "FMA22744",
+                          "triangleCount":  902
+                      },
+                      {
+                          "partId":  "FJ1526M",
+                          "name":  "Left iliocostalis cervicis",
+                          "side":  "left",
+                          "vertexCount":  988,
+                          "conceptId":  "FMA22745",
+                          "triangleCount":  898
+                      },
+                      {
+                          "partId":  "FJ1527",
+                          "name":  "Right iliocostalis lumborum",
+                          "side":  "right",
+                          "vertexCount":  3264,
+                          "conceptId":  "FMA22740",
+                          "triangleCount":  3490
+                      },
+                      {
+                          "partId":  "FJ1527M",
+                          "name":  "Left iliocostalis lumborum",
+                          "side":  "left",
+                          "vertexCount":  3278,
+                          "conceptId":  "FMA22741",
+                          "triangleCount":  3490
+                      },
+                      {
+                          "partId":  "FJ1528",
+                          "name":  "Right iliocostalis thoracis",
+                          "side":  "right",
+                          "vertexCount":  1684,
+                          "conceptId":  "FMA22742",
+                          "triangleCount":  1844
+                      },
+                      {
+                          "partId":  "FJ1528M",
+                          "name":  "Left iliocostalis thoracis",
+                          "side":  "left",
+                          "vertexCount":  1703,
+                          "conceptId":  "FMA22743",
+                          "triangleCount":  1844
+                      },
+                      {
+                          "partId":  "FJ1533",
+                          "name":  "Right longissimus capitis",
+                          "side":  "right",
+                          "vertexCount":  860,
+                          "conceptId":  "FMA22754",
+                          "triangleCount":  780
+                      },
+                      {
+                          "partId":  "FJ1533M",
+                          "name":  "Left longissimus capitis",
+                          "side":  "left",
+                          "vertexCount":  867,
+                          "conceptId":  "FMA22756",
+                          "triangleCount":  792
+                      },
+                      {
+                          "partId":  "FJ1534",
+                          "name":  "Right longissimus cervicis",
+                          "side":  "right",
+                          "vertexCount":  1065,
+                          "conceptId":  "FMA22757",
+                          "triangleCount":  916
+                      },
+                      {
+                          "partId":  "FJ1534M",
+                          "name":  "Left longissimus cervicis",
+                          "side":  "left",
+                          "vertexCount":  1056,
+                          "conceptId":  "FMA22758",
+                          "triangleCount":  912
+                      },
+                      {
+                          "partId":  "FJ1535",
+                          "name":  "Right longissimus thoracis",
+                          "side":  "right",
+                          "vertexCount":  5774,
+                          "conceptId":  "FMA22751",
+                          "triangleCount":  4136
+                      },
+                      {
+                          "partId":  "FJ1535M",
+                          "name":  "Left longissimus thoracis",
+                          "side":  "left",
+                          "vertexCount":  5816,
+                          "conceptId":  "FMA22753",
+                          "triangleCount":  4176
+                      },
+                      {
+                          "partId":  "FJ1538",
+                          "name":  "Right semispinalis capitis",
+                          "side":  "right",
+                          "vertexCount":  2307,
+                          "conceptId":  "FMA22876",
+                          "triangleCount":  1336
+                      },
+                      {
+                          "partId":  "FJ1538M",
+                          "name":  "Left semispinalis capitis",
+                          "side":  "left",
+                          "vertexCount":  2315,
+                          "conceptId":  "FMA22877",
+                          "triangleCount":  1340
+                      },
+                      {
+                          "partId":  "FJ1539",
+                          "name":  "Right semispinalis cervicis",
+                          "side":  "right",
+                          "vertexCount":  1712,
+                          "conceptId":  "FMA22874",
+                          "triangleCount":  1402
+                      },
+                      {
+                          "partId":  "FJ1539M",
+                          "name":  "Left semispinalis cervicis",
+                          "side":  "left",
+                          "vertexCount":  1701,
+                          "conceptId":  "FMA22875",
+                          "triangleCount":  1390
+                      },
+                      {
+                          "partId":  "FJ1540",
+                          "name":  "Right semispinalis thoracis",
+                          "side":  "right",
+                          "vertexCount":  2272,
+                          "conceptId":  "FMA22872",
+                          "triangleCount":  1690
+                      },
+                      {
+                          "partId":  "FJ1540M",
+                          "name":  "Left semispinalis thoracis",
+                          "side":  "left",
+                          "vertexCount":  2301,
+                          "conceptId":  "FMA22873",
+                          "triangleCount":  1718
+                      },
+                      {
+                          "partId":  "FJ1541",
+                          "name":  "Right serratus posterior inferior",
+                          "side":  "right",
+                          "vertexCount":  3285,
+                          "conceptId":  "FMA13405",
+                          "triangleCount":  3832
+                      },
+                      {
+                          "partId":  "FJ1541M",
+                          "name":  "Left serratus posterior inferior",
+                          "side":  "left",
+                          "vertexCount":  3263,
+                          "conceptId":  "FMA13406",
+                          "triangleCount":  3830
+                      },
+                      {
+                          "partId":  "FJ1543",
+                          "name":  "spinalis",
+                          "side":  "right",
+                          "vertexCount":  787,
+                          "conceptId":  "FMA77179",
+                          "triangleCount":  672
+                      },
+                      {
+                          "partId":  "FJ1543M",
+                          "name":  "Spinalis",
+                          "side":  "left",
+                          "vertexCount":  792,
+                          "conceptId":  "FMA77179",
+                          "triangleCount":  680
+                      },
+                      {
+                          "partId":  "FJ1544",
+                          "name":  "Right spinalis thoracis",
+                          "side":  "right",
+                          "vertexCount":  2063,
+                          "conceptId":  "FMA22779",
+                          "triangleCount":  1632
+                      },
+                      {
+                          "partId":  "FJ1544M",
+                          "name":  "Left spinalis thoracis",
+                          "side":  "left",
+                          "vertexCount":  2048,
+                          "conceptId":  "FMA22780",
+                          "triangleCount":  1632
+                      },
+                      {
+                          "partId":  "FJ1551",
+                          "name":  "Right interspinalis thoracis",
+                          "side":  "right",
+                          "vertexCount":  374,
+                          "conceptId":  "FMA22890",
+                          "triangleCount":  312
+                      },
+                      {
+                          "partId":  "FJ1551M",
+                          "name":  "Left interspinalis thoracis",
+                          "side":  "left",
+                          "vertexCount":  372,
+                          "conceptId":  "FMA22891",
+                          "triangleCount":  312
+                      }
+                  ],
+    "Forearms":  [
+                     {
+                         "partId":  "FJ1472",
+                         "name":  "Right extensor carpi ulnaris",
+                         "side":  "right",
+                         "vertexCount":  2167,
+                         "conceptId":  "FMA38507",
+                         "triangleCount":  1136
+                     },
+                     {
+                         "partId":  "FJ1472M",
+                         "name":  "Left extensor carpi ulnaris",
+                         "side":  "left",
+                         "vertexCount":  2185,
+                         "conceptId":  "FMA38508",
+                         "triangleCount":  1152
+                     },
+                     {
+                         "partId":  "FJ1473",
+                         "name":  "Humeral head of right flexor carpi ulnaris",
+                         "side":  "right",
+                         "vertexCount":  694,
+                         "conceptId":  "FMA38617",
+                         "triangleCount":  680
+                     },
+                     {
+                         "partId":  "FJ1473M",
+                         "name":  "Humeral head of left flexor carpi ulnaris",
+                         "side":  "left",
+                         "vertexCount":  666,
+                         "conceptId":  "FMA38618",
+                         "triangleCount":  674
+                     },
+                     {
+                         "partId":  "FJ1474",
+                         "name":  "Humeral head of right pronator teres",
+                         "side":  "right",
+                         "vertexCount":  984,
+                         "conceptId":  "FMA38560",
+                         "triangleCount":  856
+                     },
+                     {
+                         "partId":  "FJ1474M",
+                         "name":  "Humeral head of left pronator teres",
+                         "side":  "left",
+                         "vertexCount":  1002,
+                         "conceptId":  "FMA38561",
+                         "triangleCount":  860
+                     },
+                     {
+                         "partId":  "FJ1475",
+                         "name":  "Right flexor digitorum superficialis",
+                         "side":  "right",
+                         "vertexCount":  1998,
+                         "conceptId":  "FMA38470",
+                         "triangleCount":  1912
+                     },
+                     {
+                         "partId":  "FJ1475M",
+                         "name":  "Left flexor digitorum superficialis",
+                         "side":  "left",
+                         "vertexCount":  1993,
+                         "conceptId":  "FMA38471",
+                         "triangleCount":  1912
+                     },
+                     {
+                         "partId":  "FJ1484",
+                         "name":  "Right abductor pollicis longus",
+                         "side":  "right",
+                         "vertexCount":  655,
+                         "conceptId":  "FMA38516",
+                         "triangleCount":  592
+                     },
+                     {
+                         "partId":  "FJ1484M",
+                         "name":  "Left abductor pollicis longus",
+                         "side":  "left",
+                         "vertexCount":  657,
+                         "conceptId":  "FMA38517",
+                         "triangleCount":  600
+                     },
+                     {
+                         "partId":  "FJ1487",
+                         "name":  "Right brachioradialis",
+                         "side":  "right",
+                         "vertexCount":  1012,
+                         "conceptId":  "FMA38486",
+                         "triangleCount":  1072
+                     },
+                     {
+                         "partId":  "FJ1487M",
+                         "name":  "Left brachioradialis",
+                         "side":  "left",
+                         "vertexCount":  991,
+                         "conceptId":  "FMA38487",
+                         "triangleCount":  1070
+                     },
+                     {
+                         "partId":  "FJ1489",
+                         "name":  "Right extensor carpi radialis brevis",
+                         "side":  "right",
+                         "vertexCount":  585,
+                         "conceptId":  "FMA38498",
+                         "triangleCount":  522
+                     },
+                     {
+                         "partId":  "FJ1489M",
+                         "name":  "Left extensor carpi radialis brevis",
+                         "side":  "left",
+                         "vertexCount":  560,
+                         "conceptId":  "FMA38499",
+                         "triangleCount":  508
+                     },
+                     {
+                         "partId":  "FJ1490",
+                         "name":  "Right extensor carpi radialis longus",
+                         "side":  "right",
+                         "vertexCount":  528,
+                         "conceptId":  "FMA38495",
+                         "triangleCount":  544
+                     },
+                     {
+                         "partId":  "FJ1490M",
+                         "name":  "Left extensor carpi radialis longus",
+                         "side":  "left",
+                         "vertexCount":  537,
+                         "conceptId":  "FMA38496",
+                         "triangleCount":  544
+                     },
+                     {
+                         "partId":  "FJ1491",
+                         "name":  "Right extensor digiti minimi",
+                         "side":  "right",
+                         "vertexCount":  304,
+                         "conceptId":  "FMA38504",
+                         "triangleCount":  314
+                     },
+                     {
+                         "partId":  "FJ1491M",
+                         "name":  "Left extensor digiti minimi",
+                         "side":  "left",
+                         "vertexCount":  310,
+                         "conceptId":  "FMA38505",
+                         "triangleCount":  314
+                     },
+                     {
+                         "partId":  "FJ1492",
+                         "name":  "Right extensor digitorum",
+                         "side":  "right",
+                         "vertexCount":  1313,
+                         "conceptId":  "FMA38501",
+                         "triangleCount":  1054
+                     },
+                     {
+                         "partId":  "FJ1492M",
+                         "name":  "Left extensor digitorum",
+                         "side":  "left",
+                         "vertexCount":  1305,
+                         "conceptId":  "FMA38502",
+                         "triangleCount":  1062
+                     },
+                     {
+                         "partId":  "FJ1493",
+                         "name":  "Right extensor indicis",
+                         "side":  "right",
+                         "vertexCount":  426,
+                         "conceptId":  "FMA38525",
+                         "triangleCount":  340
+                     },
+                     {
+                         "partId":  "FJ1493M",
+                         "name":  "Left extensor indicis",
+                         "side":  "left",
+                         "vertexCount":  431,
+                         "conceptId":  "FMA38526",
+                         "triangleCount":  342
+                     },
+                     {
+                         "partId":  "FJ1494",
+                         "name":  "Right extensor pollicis brevis",
+                         "side":  "right",
+                         "vertexCount":  497,
+                         "conceptId":  "FMA38519",
+                         "triangleCount":  438
+                     },
+                     {
+                         "partId":  "FJ1494M",
+                         "name":  "Left extensor pollicis brevis",
+                         "side":  "left",
+                         "vertexCount":  491,
+                         "conceptId":  "FMA38520",
+                         "triangleCount":  434
+                     },
+                     {
+                         "partId":  "FJ1495",
+                         "name":  "Right extensor pollicis longus",
+                         "side":  "right",
+                         "vertexCount":  613,
+                         "conceptId":  "FMA38522",
+                         "triangleCount":  488
+                     },
+                     {
+                         "partId":  "FJ1495M",
+                         "name":  "Left extensor pollicis longus",
+                         "side":  "left",
+                         "vertexCount":  623,
+                         "conceptId":  "FMA38523",
+                         "triangleCount":  490
+                     },
+                     {
+                         "partId":  "FJ1496",
+                         "name":  "Right flexor carpi radialis",
+                         "side":  "right",
+                         "vertexCount":  299,
+                         "conceptId":  "FMA38460",
+                         "triangleCount":  310
+                     },
+                     {
+                         "partId":  "FJ1496M",
+                         "name":  "Left flexor carpi radialis",
+                         "side":  "left",
+                         "vertexCount":  300,
+                         "conceptId":  "FMA38461",
+                         "triangleCount":  312
+                     },
+                     {
+                         "partId":  "FJ1497",
+                         "name":  "Right flexor digitorum profundus",
+                         "side":  "right",
+                         "vertexCount":  1520,
+                         "conceptId":  "FMA38479",
+                         "triangleCount":  1304
+                     },
+                     {
+                         "partId":  "FJ1497M",
+                         "name":  "Left flexor digitorum profundus",
+                         "side":  "left",
+                         "vertexCount":  1521,
+                         "conceptId":  "FMA38480",
+                         "triangleCount":  1296
+                     },
+                     {
+                         "partId":  "FJ1499",
+                         "name":  "Right flexor digitorum superficialis",
+                         "side":  "right",
+                         "vertexCount":  329,
+                         "conceptId":  "FMA38470",
+                         "triangleCount":  368
+                     },
+                     {
+                         "partId":  "FJ1499M",
+                         "name":  "Left flexor digitorum superficialis",
+                         "side":  "left",
+                         "vertexCount":  328,
+                         "conceptId":  "FMA38471",
+                         "triangleCount":  366
+                     },
+                     {
+                         "partId":  "FJ1502",
+                         "name":  "Right palmaris longus",
+                         "side":  "right",
+                         "vertexCount":  2090,
+                         "conceptId":  "FMA38463",
+                         "triangleCount":  1500
+                     },
+                     {
+                         "partId":  "FJ1502M",
+                         "name":  "Left palmaris longus",
+                         "side":  "left",
+                         "vertexCount":  2094,
+                         "conceptId":  "FMA38464",
+                         "triangleCount":  1506
+                     },
+                     {
+                         "partId":  "FJ1503",
+                         "name":  "Right pronator quadratus",
+                         "side":  "right",
+                         "vertexCount":  1724,
+                         "conceptId":  "FMA38454",
+                         "triangleCount":  1284
+                     },
+                     {
+                         "partId":  "FJ1503M",
+                         "name":  "Left pronator quadratus",
+                         "side":  "left",
+                         "vertexCount":  1737,
+                         "conceptId":  "FMA38455",
+                         "triangleCount":  1292
+                     },
+                     {
+                         "partId":  "FJ1505",
+                         "name":  "Right supinator",
+                         "side":  "right",
+                         "vertexCount":  1229,
+                         "conceptId":  "FMA38513",
+                         "triangleCount":  1266
+                     },
+                     {
+                         "partId":  "FJ1505M",
+                         "name":  "Left supinator",
+                         "side":  "left",
+                         "vertexCount":  1253,
+                         "conceptId":  "FMA38514",
+                         "triangleCount":  1282
+                     },
+                     {
+                         "partId":  "FJ1516",
+                         "name":  "Ulnar head of right pronator teres",
+                         "side":  "right",
+                         "vertexCount":  486,
+                         "conceptId":  "FMA38562",
+                         "triangleCount":  542
+                     },
+                     {
+                         "partId":  "FJ1516M",
+                         "name":  "Ulnar head of left pronator teres",
+                         "side":  "left",
+                         "vertexCount":  489,
+                         "conceptId":  "FMA38563",
+                         "triangleCount":  548
+                     },
+                     {
+                         "partId":  "FJ1517",
+                         "name":  "Right extensor carpi ulnaris",
+                         "side":  "right",
+                         "vertexCount":  662,
+                         "conceptId":  "FMA38507",
+                         "triangleCount":  504
+                     },
+                     {
+                         "partId":  "FJ1517M",
+                         "name":  "Left extensor carpi ulnaris",
+                         "side":  "left",
+                         "vertexCount":  666,
+                         "conceptId":  "FMA38508",
+                         "triangleCount":  508
+                     },
+                     {
+                         "partId":  "FJ1518",
+                         "name":  "Ulnar head of right flexor carpi ulnaris",
+                         "side":  "right",
+                         "vertexCount":  1262,
+                         "conceptId":  "FMA38619",
+                         "triangleCount":  868
+                     },
+                     {
+                         "partId":  "FJ1518M",
+                         "name":  "Ulnar head of left flexor carpi ulnaris",
+                         "side":  "left",
+                         "vertexCount":  1269,
+                         "conceptId":  "FMA38620",
+                         "triangleCount":  868
+                     }
+                 ],
+    "Calves":  [
+                   {
+                       "partId":  "FJ1394",
+                       "name":  "Lateral head of right gastrocnemius",
+                       "side":  "right",
+                       "vertexCount":  482,
+                       "conceptId":  "FMA45960",
+                       "triangleCount":  738
+                   },
+                   {
+                       "partId":  "FJ1394M",
+                       "name":  "Lateral head of left gastrocnemius",
+                       "side":  "left",
+                       "vertexCount":  487,
+                       "conceptId":  "FMA45961",
+                       "triangleCount":  748
+                   },
+                   {
+                       "partId":  "FJ1397",
+                       "name":  "Medial head of right gastrocnemius",
+                       "side":  "right",
+                       "vertexCount":  647,
+                       "conceptId":  "FMA45957",
+                       "triangleCount":  882
+                   },
+                   {
+                       "partId":  "FJ1397M",
+                       "name":  "Medial head of left gastrocnemius",
+                       "side":  "left",
+                       "vertexCount":  644,
+                       "conceptId":  "FMA45958",
+                       "triangleCount":  892
+                   },
+                   {
+                       "partId":  "FJ1406",
+                       "name":  "Right extensor digitorum longus",
+                       "side":  "right",
+                       "vertexCount":  1859,
+                       "conceptId":  "FMA22548",
+                       "triangleCount":  1326
+                   },
+                   {
+                       "partId":  "FJ1406M",
+                       "name":  "Left extensor digitorum longus",
+                       "side":  "left",
+                       "vertexCount":  1848,
+                       "conceptId":  "FMA22549",
+                       "triangleCount":  1326
+                   },
+                   {
+                       "partId":  "FJ1408",
+                       "name":  "Right extensor hallucis longus",
+                       "side":  "right",
+                       "vertexCount":  618,
+                       "conceptId":  "FMA22546",
+                       "triangleCount":  526
+                   },
+                   {
+                       "partId":  "FJ1408M",
+                       "name":  "Left extensor hallucis longus",
+                       "side":  "left",
+                       "vertexCount":  626,
+                       "conceptId":  "FMA22547",
+                       "triangleCount":  548
+                   },
+                   {
+                       "partId":  "FJ1414",
+                       "name":  "Right flexor digitorum longus",
+                       "side":  "right",
+                       "vertexCount":  1081,
+                       "conceptId":  "FMA65016",
+                       "triangleCount":  1006
+                   },
+                   {
+                       "partId":  "FJ1414M",
+                       "name":  "Left flexor digitorum longus",
+                       "side":  "left",
+                       "vertexCount":  1103,
+                       "conceptId":  "FMA65017",
+                       "triangleCount":  1024
+                   },
+                   {
+                       "partId":  "FJ1415",
+                       "name":  "Right flexor hallucis longus",
+                       "side":  "right",
+                       "vertexCount":  605,
+                       "conceptId":  "FMA65014",
+                       "triangleCount":  660
+                   },
+                   {
+                       "partId":  "FJ1415M",
+                       "name":  "Left flexor hallucis longus",
+                       "side":  "left",
+                       "vertexCount":  604,
+                       "conceptId":  "FMA65015",
+                       "triangleCount":  664
+                   },
+                   {
+                       "partId":  "FJ1429",
+                       "name":  "Right plantaris",
+                       "side":  "right",
+                       "vertexCount":  376,
+                       "conceptId":  "FMA22560",
+                       "triangleCount":  552
+                   },
+                   {
+                       "partId":  "FJ1429M",
+                       "name":  "Left plantaris",
+                       "side":  "left",
+                       "vertexCount":  382,
+                       "conceptId":  "FMA22561",
+                       "triangleCount":  552
+                   },
+                   {
+                       "partId":  "FJ1430",
+                       "name":  "Right popliteus",
+                       "side":  "right",
+                       "vertexCount":  357,
+                       "conceptId":  "FMA22591",
+                       "triangleCount":  468
+                   },
+                   {
+                       "partId":  "FJ1430M",
+                       "name":  "Left popliteus",
+                       "side":  "left",
+                       "vertexCount":  356,
+                       "conceptId":  "FMA22592",
+                       "triangleCount":  462
+                   },
+                   {
+                       "partId":  "FJ1437",
+                       "name":  "Right soleus",
+                       "side":  "right",
+                       "vertexCount":  792,
+                       "conceptId":  "FMA22558",
+                       "triangleCount":  1004
+                   },
+                   {
+                       "partId":  "FJ1437M",
+                       "name":  "Left soleus",
+                       "side":  "left",
+                       "vertexCount":  778,
+                       "conceptId":  "FMA22559",
+                       "triangleCount":  976
+                   }
+               ],
+    "Triceps":  [
+                    {
+                        "partId":  "FJ1477",
+                        "name":  "Lateral head of right triceps brachii",
+                        "side":  "right",
+                        "vertexCount":  656,
+                        "conceptId":  "FMA37697",
+                        "triangleCount":  838
+                    },
+                    {
+                        "partId":  "FJ1477M",
+                        "name":  "Lateral head of left triceps brachii",
+                        "side":  "left",
+                        "vertexCount":  661,
+                        "conceptId":  "FMA37698",
+                        "triangleCount":  830
+                    },
+                    {
+                        "partId":  "FJ1479",
+                        "name":  "Long head of right triceps brachii",
+                        "side":  "right",
+                        "vertexCount":  504,
+                        "conceptId":  "FMA37699",
+                        "triangleCount":  560
+                    },
+                    {
+                        "partId":  "FJ1479M",
+                        "name":  "Long head of left triceps brachii",
+                        "side":  "left",
+                        "vertexCount":  504,
+                        "conceptId":  "FMA37700",
+                        "triangleCount":  562
+                    },
+                    {
+                        "partId":  "FJ1480",
+                        "name":  "Medial head of right triceps brachii",
+                        "side":  "right",
+                        "vertexCount":  325,
+                        "conceptId":  "FMA37695",
+                        "triangleCount":  372
+                    },
+                    {
+                        "partId":  "FJ1480M",
+                        "name":  "Medial head of left triceps brachii",
+                        "side":  "left",
+                        "vertexCount":  325,
+                        "conceptId":  "FMA37696",
+                        "triangleCount":  374
+                    },
+                    {
+                        "partId":  "FJ1485",
+                        "name":  "Right anconeus",
+                        "side":  "right",
+                        "vertexCount":  700,
+                        "conceptId":  "FMA37705",
+                        "triangleCount":  654
+                    },
+                    {
+                        "partId":  "FJ1485M",
+                        "name":  "Left anconeus",
+                        "side":  "left",
+                        "vertexCount":  693,
+                        "conceptId":  "FMA37706",
+                        "triangleCount":  640
+                    }
+                ],
+    "Hamstrings":  [
+                       {
+                           "partId":  "FJ1395",
+                           "name":  "Long head of right biceps femoris",
+                           "side":  "right",
+                           "vertexCount":  718,
+                           "conceptId":  "FMA45888",
+                           "triangleCount":  1124
+                       },
+                       {
+                           "partId":  "FJ1395M",
+                           "name":  "Long head of left biceps femoris",
+                           "side":  "left",
+                           "vertexCount":  726,
+                           "conceptId":  "FMA45889",
+                           "triangleCount":  1124
+                       },
+                       {
+                           "partId":  "FJ1435",
+                           "name":  "Right semimembranosus",
+                           "side":  "right",
+                           "vertexCount":  664,
+                           "conceptId":  "FMA22448",
+                           "triangleCount":  1014
+                       },
+                       {
+                           "partId":  "FJ1435M",
+                           "name":  "Left semimembranosus",
+                           "side":  "left",
+                           "vertexCount":  659,
+                           "conceptId":  "FMA22449",
+                           "triangleCount":  1014
+                       },
+                       {
+                           "partId":  "FJ1436",
+                           "name":  "Right semitendinosus",
+                           "side":  "right",
+                           "vertexCount":  638,
+                           "conceptId":  "FMA22358",
+                           "triangleCount":  596
+                       },
+                       {
+                           "partId":  "FJ1436M",
+                           "name":  "Left semitendinosus",
+                           "side":  "left",
+                           "vertexCount":  624,
+                           "conceptId":  "FMA22359",
+                           "triangleCount":  596
+                       },
+                       {
+                           "partId":  "FJ1444",
+                           "name":  "Short head of right biceps femoris",
+                           "side":  "right",
+                           "vertexCount":  456,
+                           "conceptId":  "FMA45891",
+                           "triangleCount":  492
+                       },
+                       {
+                           "partId":  "FJ1444M",
+                           "name":  "Short head of left biceps femoris",
+                           "side":  "left",
+                           "vertexCount":  450,
+                           "conceptId":  "FMA45892",
+                           "triangleCount":  480
+                       }
+                   ],
+    "Chest":  [
+                  {
+                      "partId":  "FJ1446",
+                      "name":  "Abdominal part of right pectoralis major",
+                      "side":  "right",
+                      "vertexCount":  563,
+                      "conceptId":  "FMA45874",
+                      "triangleCount":  726
+                  },
+                  {
+                      "partId":  "FJ1446M",
+                      "name":  "Abdominal part of left pectoralis major",
+                      "side":  "left",
+                      "vertexCount":  564,
+                      "conceptId":  "FMA45875",
+                      "triangleCount":  722
+                  },
+                  {
+                      "partId":  "FJ1447",
+                      "name":  "Clavicular part of right pectoralis major",
+                      "side":  "right",
+                      "vertexCount":  917,
+                      "conceptId":  "FMA34690",
+                      "triangleCount":  998
+                  },
+                  {
+                      "partId":  "FJ1447M",
+                      "name":  "Clavicular part of left pectoralis major",
+                      "side":  "left",
+                      "vertexCount":  922,
+                      "conceptId":  "FMA34691",
+                      "triangleCount":  998
+                  },
+                  {
+                      "partId":  "FJ1456",
+                      "name":  "Right pectoralis minor",
+                      "side":  "right",
+                      "vertexCount":  2726,
+                      "conceptId":  "FMA13375",
+                      "triangleCount":  2612
+                  },
+                  {
+                      "partId":  "FJ1456M",
+                      "name":  "Left pectoralis minor",
+                      "side":  "left",
+                      "vertexCount":  2729,
+                      "conceptId":  "FMA13376",
+                      "triangleCount":  2590
+                  },
+                  {
+                      "partId":  "FJ1460",
+                      "name":  "Right subclavius",
+                      "side":  "right",
+                      "vertexCount":  670,
+                      "conceptId":  "FMA13412",
+                      "triangleCount":  824
+                  },
+                  {
+                      "partId":  "FJ1460M",
+                      "name":  "Left subclavius",
+                      "side":  "left",
+                      "vertexCount":  673,
+                      "conceptId":  "FMA13411",
+                      "triangleCount":  818
+                  },
+                  {
+                      "partId":  "FJ1464",
+                      "name":  "Sternocostal part of right pectoralis major",
+                      "side":  "right",
+                      "vertexCount":  3278,
+                      "conceptId":  "FMA79979",
+                      "triangleCount":  3480
+                  },
+                  {
+                      "partId":  "FJ1464M",
+                      "name":  "Sternocostal part of left pectoralis major",
+                      "side":  "left",
+                      "vertexCount":  3271,
+                      "conceptId":  "FMA79980",
+                      "triangleCount":  3490
+                  }
+              ],
+    "Shoulders":  [
+                      {
+                          "partId":  "FJ1467",
+                          "name":  "Acromial part of right deltoid",
+                          "side":  "right",
+                          "vertexCount":  545,
+                          "conceptId":  "FMA34682",
+                          "triangleCount":  686
+                      },
+                      {
+                          "partId":  "FJ1467M",
+                          "name":  "Acromial part of left deltoid",
+                          "side":  "left",
+                          "vertexCount":  544,
+                          "conceptId":  "FMA34683",
+                          "triangleCount":  686
+                      },
+                      {
+                          "partId":  "FJ1468",
+                          "name":  "Clavicular part of right deltoid",
+                          "side":  "right",
+                          "vertexCount":  2121,
+                          "conceptId":  "FMA34680",
+                          "triangleCount":  1486
+                      },
+                      {
+                          "partId":  "FJ1468M",
+                          "name":  "Clavicular part of left deltoid",
+                          "side":  "left",
+                          "vertexCount":  2143,
+                          "conceptId":  "FMA34681",
+                          "triangleCount":  1500
+                      },
+                      {
+                          "partId":  "FJ1513",
+                          "name":  "Spinal part of right deltoid",
+                          "side":  "right",
+                          "vertexCount":  1063,
+                          "conceptId":  "FMA34684",
+                          "triangleCount":  1028
+                      },
+                      {
+                          "partId":  "FJ1513M",
+                          "name":  "Spinal part of left deltoid",
+                          "side":  "left",
+                          "vertexCount":  1078,
+                          "conceptId":  "FMA34685",
+                          "triangleCount":  1046
+                      }
+                  ],
+    "UpperBack":  [
+                      {
+                          "partId":  "FJ1500",
+                          "name":  "Right infraspinatus muscle",
+                          "side":  "right",
+                          "vertexCount":  528,
+                          "conceptId":  "FMA32547",
+                          "triangleCount":  536
+                      },
+                      {
+                          "partId":  "FJ1500M",
+                          "name":  "Left infraspinatus muscle",
+                          "side":  "left",
+                          "vertexCount":  510,
+                          "conceptId":  "FMA32548",
+                          "triangleCount":  530
+                      },
+                      {
+                          "partId":  "FJ1506",
+                          "name":  "Right supraspinatus",
+                          "side":  "right",
+                          "vertexCount":  622,
+                          "conceptId":  "FMA32544",
+                          "triangleCount":  564
+                      },
+                      {
+                          "partId":  "FJ1506M",
+                          "name":  "Left supraspinatus",
+                          "side":  "left",
+                          "vertexCount":  627,
+                          "conceptId":  "FMA32545",
+                          "triangleCount":  564
+                      },
+                      {
+                          "partId":  "FJ1507",
+                          "name":  "Right teres major",
+                          "side":  "right",
+                          "vertexCount":  775,
+                          "conceptId":  "FMA32551",
+                          "triangleCount":  700
+                      },
+                      {
+                          "partId":  "FJ1507M",
+                          "name":  "Left teres major",
+                          "side":  "left",
+                          "vertexCount":  783,
+                          "conceptId":  "FMA32552",
+                          "triangleCount":  702
+                      },
+                      {
+                          "partId":  "FJ1508",
+                          "name":  "Right teres minor",
+                          "side":  "right",
+                          "vertexCount":  316,
+                          "conceptId":  "FMA32553",
+                          "triangleCount":  372
+                      },
+                      {
+                          "partId":  "FJ1508M",
+                          "name":  "Left teres minor",
+                          "side":  "left",
+                          "vertexCount":  307,
+                          "conceptId":  "FMA32554",
+                          "triangleCount":  364
+                      },
+                      {
+                          "partId":  "FJ1520",
+                          "name":  "Ascending part of right trapezius",
+                          "side":  "right",
+                          "vertexCount":  2787,
+                          "conceptId":  "FMA33581",
+                          "triangleCount":  2654
+                      },
+                      {
+                          "partId":  "FJ1520M",
+                          "name":  "Ascending part of left trapezius",
+                          "side":  "left",
+                          "vertexCount":  2752,
+                          "conceptId":  "FMA33583",
+                          "triangleCount":  2640
+                      },
+                      {
+                          "partId":  "FJ1521",
+                          "name":  "Descending part of right trapezius",
+                          "side":  "right",
+                          "vertexCount":  2394,
+                          "conceptId":  "FMA33586",
+                          "triangleCount":  2618
+                      },
+                      {
+                          "partId":  "FJ1521M",
+                          "name":  "Descending part of left trapezius",
+                          "side":  "left",
+                          "vertexCount":  2380,
+                          "conceptId":  "FMA33587",
+                          "triangleCount":  2622
+                      },
+                      {
+                          "partId":  "FJ1536",
+                          "name":  "Right rhomboid major",
+                          "side":  "right",
+                          "vertexCount":  1824,
+                          "conceptId":  "FMA13381",
+                          "triangleCount":  1860
+                      },
+                      {
+                          "partId":  "FJ1536M",
+                          "name":  "Left rhomboid major",
+                          "side":  "left",
+                          "vertexCount":  1806,
+                          "conceptId":  "FMA13382",
+                          "triangleCount":  1852
+                      },
+                      {
+                          "partId":  "FJ1537",
+                          "name":  "Right rhomboid minor",
+                          "side":  "right",
+                          "vertexCount":  645,
+                          "conceptId":  "FMA13383",
+                          "triangleCount":  746
+                      },
+                      {
+                          "partId":  "FJ1537M",
+                          "name":  "Left rhomboid minor",
+                          "side":  "left",
+                          "vertexCount":  644,
+                          "conceptId":  "FMA13384",
+                          "triangleCount":  742
+                      },
+                      {
+                          "partId":  "FJ1542",
+                          "name":  "Right serratus posterior superior",
+                          "side":  "right",
+                          "vertexCount":  2778,
+                          "conceptId":  "FMA13403",
+                          "triangleCount":  3042
+                      },
+                      {
+                          "partId":  "FJ1542M",
+                          "name":  "Left serratus posterior superior",
+                          "side":  "left",
+                          "vertexCount":  2765,
+                          "conceptId":  "FMA13404",
+                          "triangleCount":  3066
+                      },
+                      {
+                          "partId":  "FJ1545",
+                          "name":  "Right splenius capitis",
+                          "side":  "right",
+                          "vertexCount":  1448,
+                          "conceptId":  "FMA22728",
+                          "triangleCount":  1716
+                      },
+                      {
+                          "partId":  "FJ1545M",
+                          "name":  "Left splenius capitis",
+                          "side":  "left",
+                          "vertexCount":  1432,
+                          "conceptId":  "FMA22729",
+                          "triangleCount":  1716
+                      },
+                      {
+                          "partId":  "FJ1546",
+                          "name":  "Right splenius cervicis",
+                          "side":  "right",
+                          "vertexCount":  1635,
+                          "conceptId":  "FMA22726",
+                          "triangleCount":  1376
+                      },
+                      {
+                          "partId":  "FJ1546M",
+                          "name":  "Left splenius cervicis",
+                          "side":  "left",
+                          "vertexCount":  1624,
+                          "conceptId":  "FMA22727",
+                          "triangleCount":  1376
+                      },
+                      {
+                          "partId":  "FJ1554",
+                          "name":  "Transverse part of right trapezius",
+                          "side":  "right",
+                          "vertexCount":  1989,
+                          "conceptId":  "FMA33584",
+                          "triangleCount":  1960
+                      },
+                      {
+                          "partId":  "FJ1554M",
+                          "name":  "Transverse part of left trapezius",
+                          "side":  "left",
+                          "vertexCount":  1981,
+                          "conceptId":  "FMA33585",
+                          "triangleCount":  1962
+                      }
+                  ],
+    "Glutes":  [
+                   {
+                       "partId":  "FJ1416",
+                       "name":  "Right gemellus inferior",
+                       "side":  "right",
+                       "vertexCount":  393,
+                       "conceptId":  "FMA22336",
+                       "triangleCount":  460
+                   },
+                   {
+                       "partId":  "FJ1416M",
+                       "name":  "Left gemellus inferior",
+                       "side":  "left",
+                       "vertexCount":  390,
+                       "conceptId":  "FMA22337",
+                       "triangleCount":  456
+                   },
+                   {
+                       "partId":  "FJ1417",
+                       "name":  "Right gemellus superior",
+                       "side":  "right",
+                       "vertexCount":  409,
+                       "conceptId":  "FMA22334",
+                       "triangleCount":  306
+                   },
+                   {
+                       "partId":  "FJ1417M",
+                       "name":  "Left gemellus superior",
+                       "side":  "left",
+                       "vertexCount":  411,
+                       "conceptId":  "FMA22335",
+                       "triangleCount":  306
+                   },
+                   {
+                       "partId":  "FJ1418",
+                       "name":  "Right gluteus maximus",
+                       "side":  "right",
+                       "vertexCount":  1328,
+                       "conceptId":  "FMA22328",
+                       "triangleCount":  1236
+                   },
+                   {
+                       "partId":  "FJ1418M",
+                       "name":  "Left gluteus maximus",
+                       "side":  "left",
+                       "vertexCount":  1336,
+                       "conceptId":  "FMA22329",
+                       "triangleCount":  1240
+                   },
+                   {
+                       "partId":  "FJ1419",
+                       "name":  "Right gluteus medius",
+                       "side":  "right",
+                       "vertexCount":  1129,
+                       "conceptId":  "FMA22330",
+                       "triangleCount":  1370
+                   },
+                   {
+                       "partId":  "FJ1419M",
+                       "name":  "Left gluteus medius",
+                       "side":  "left",
+                       "vertexCount":  1126,
+                       "conceptId":  "FMA22331",
+                       "triangleCount":  1378
+                   },
+                   {
+                       "partId":  "FJ1420",
+                       "name":  "Right gluteus minimus",
+                       "side":  "right",
+                       "vertexCount":  1346,
+                       "conceptId":  "FMA22332",
+                       "triangleCount":  1432
+                   },
+                   {
+                       "partId":  "FJ1420M",
+                       "name":  "Left gluteus minimus",
+                       "side":  "left",
+                       "vertexCount":  1350,
+                       "conceptId":  "FMA22333",
+                       "triangleCount":  1436
+                   },
+                   {
+                       "partId":  "FJ1425",
+                       "name":  "Right obturator externus",
+                       "side":  "right",
+                       "vertexCount":  498,
+                       "conceptId":  "FMA22326",
+                       "triangleCount":  562
+                   },
+                   {
+                       "partId":  "FJ1425M",
+                       "name":  "Left obturator externus",
+                       "side":  "left",
+                       "vertexCount":  504,
+                       "conceptId":  "FMA22327",
+                       "triangleCount":  564
+                   },
+                   {
+                       "partId":  "FJ1426",
+                       "name":  "Right obturator internus",
+                       "side":  "right",
+                       "vertexCount":  1084,
+                       "conceptId":  "FMA22324",
+                       "triangleCount":  1250
+                   },
+                   {
+                       "partId":  "FJ1426M",
+                       "name":  "Left obturator internus",
+                       "side":  "left",
+                       "vertexCount":  1091,
+                       "conceptId":  "FMA22325",
+                       "triangleCount":  1258
+                   },
+                   {
+                       "partId":  "FJ1428",
+                       "name":  "Right piriformis",
+                       "side":  "right",
+                       "vertexCount":  511,
+                       "conceptId":  "FMA22340",
+                       "triangleCount":  614
+                   },
+                   {
+                       "partId":  "FJ1428M",
+                       "name":  "Left piriformis",
+                       "side":  "left",
+                       "vertexCount":  507,
+                       "conceptId":  "FMA22341",
+                       "triangleCount":  610
+                   },
+                   {
+                       "partId":  "FJ1432",
+                       "name":  "Right quadratus femoris",
+                       "side":  "right",
+                       "vertexCount":  743,
+                       "conceptId":  "FMA22338",
+                       "triangleCount":  780
+                   },
+                   {
+                       "partId":  "FJ1432M",
+                       "name":  "Left quadratus femoris",
+                       "side":  "left",
+                       "vertexCount":  743,
+                       "conceptId":  "FMA22339",
+                       "triangleCount":  782
+                   }
+               ],
+    "Biceps":  [
+                   {
+                       "partId":  "FJ1478",
+                       "name":  "Long head of right biceps brachii",
+                       "side":  "right",
+                       "vertexCount":  466,
+                       "conceptId":  "FMA37686",
+                       "triangleCount":  492
+                   },
+                   {
+                       "partId":  "FJ1478M",
+                       "name":  "Long head of left biceps brachii",
+                       "side":  "left",
+                       "vertexCount":  457,
+                       "conceptId":  "FMA37687",
+                       "triangleCount":  492
+                   },
+                   {
+                       "partId":  "FJ1486",
+                       "name":  "Right brachialis",
+                       "side":  "right",
+                       "vertexCount":  630,
+                       "conceptId":  "FMA37668",
+                       "triangleCount":  712
+                   },
+                   {
+                       "partId":  "FJ1486M",
+                       "name":  "Left brachialis",
+                       "side":  "left",
+                       "vertexCount":  621,
+                       "conceptId":  "FMA37669",
+                       "triangleCount":  702
+                   },
+                   {
+                       "partId":  "FJ1488",
+                       "name":  "Right coracobrachialis",
+                       "side":  "right",
+                       "vertexCount":  329,
+                       "conceptId":  "FMA37665",
+                       "triangleCount":  280
+                   },
+                   {
+                       "partId":  "FJ1488M",
+                       "name":  "Left coracobrachialis",
+                       "side":  "left",
+                       "vertexCount":  321,
+                       "conceptId":  "FMA37666",
+                       "triangleCount":  276
+                   },
+                   {
+                       "partId":  "FJ1512",
+                       "name":  "Short head of right biceps brachii",
+                       "side":  "right",
+                       "vertexCount":  1035,
+                       "conceptId":  "FMA37684",
+                       "triangleCount":  804
+                   },
+                   {
+                       "partId":  "FJ1512M",
+                       "name":  "Short head of left biceps brachii",
+                       "side":  "left",
+                       "vertexCount":  1032,
+                       "conceptId":  "FMA37685",
+                       "triangleCount":  816
+                   }
+               ]
+}
