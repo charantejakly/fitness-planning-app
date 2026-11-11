@@ -792,8 +792,8 @@ function workoutView() {
 
   const anatomySelectorHtml = `
     <div class="anatomy-mode-tabs" role="tablist" aria-label="Anatomy viewer format">
-      <button type="button" class="${is3DActive ? 'active' : ''}" data-anatomy-display="3d">3D Anatomy</button>
-      <button type="button" class="${!is3DActive ? 'active' : ''}" data-anatomy-display="2d">2D Vector</button>
+      <button type="button" class="${is3DActive ? 'active' : ''}" data-anatomy-display="3d">3D</button>
+      <button type="button" class="${!is3DActive ? 'active' : ''}" data-anatomy-display="2d">2D</button>
     </div>
   `;
 
