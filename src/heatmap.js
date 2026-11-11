@@ -1,6 +1,7 @@
 // Daily Muscle Heatmap Calculation, Thresholds, and State Aggregation
 
 import { CANONICAL_CATALOG, CANONICAL_MUSCLES, isValidExercise, isValidSet } from "./muscle-data.js";
+import { isHardSet } from "./effort.js";
 
 export const DEFAULT_HEATMAP_THRESHOLDS = {
   yellow: 1,
@@ -42,9 +43,10 @@ export function validateHeatmapThresholds(thresholds) {
  * Calculates the daily muscle heatmap for a specific calendar date
  * @param {Array} sessionsForDate - Array of workout objects for that date
  * @param {Object} rawThresholds - User-configured or default set thresholds
+ * @param {string} filterMode - "all" for all valid sets, "hard" for sets near failure (RIR <= 2 / RPE >= 8)
  * @returns {Object|null} - Daily heatmap data object, or null if no valid detailed training data exists
  */
-export function calculateDailyHeatmap(sessionsForDate, rawThresholds = DEFAULT_HEATMAP_THRESHOLDS) {
+export function calculateDailyHeatmap(sessionsForDate, rawThresholds = DEFAULT_HEATMAP_THRESHOLDS, filterMode = "all") {
   if (!Array.isArray(sessionsForDate) || sessionsForDate.length === 0) {
     return null;
   }
@@ -78,7 +80,9 @@ export function calculateDailyHeatmap(sessionsForDate, rawThresholds = DEFAULT_H
 
   for (const item of qualifyingSessions) {
     for (const ex of item.validExercises) {
-      const validSetsCount = (ex.sets || []).filter(isValidSet).length;
+      const allValidSets = (ex.sets || []).filter(isValidSet);
+      const qualifyingSets = filterMode === "hard" ? allValidSets.filter(isHardSet) : allValidSets;
+      const validSetsCount = qualifyingSets.length;
       totalDaySets += validSetsCount;
 
       const primaryMuscles = ex.muscleMapping?.primary || [];

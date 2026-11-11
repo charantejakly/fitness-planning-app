@@ -42,6 +42,12 @@ import {
   calculateAllMuscleRecovery
 } from "./recovery.js";
 import { createAnatomy3DViewer, isWebGLAvailable } from "./anatomy-3d.js";
+import { requestWakeLock, releaseWakeLock } from "./wakelock.js";
+import { playRestCompleteChime, vibrate, beep } from "./sound.js";
+import { estimate1RM, bestSet1RM, e1rmSeries, best1RM, is1RMRecord } from "./onerm.js";
+import { parseEffort, isHardSet } from "./effort.js";
+import { importWorkoutCSV } from "./import-csv.js";
+import { suggestNextPrescription } from "./progression.js";
 
 let data = loadData();
 let activeDate = localDate();
@@ -58,11 +64,46 @@ let pickerSearchQuery = "";
 let editingExerciseMusclesIndex = null;
 let editingCustomExerciseId = null;
 
+// Rest Timer & Workout Utilities
+let restTimerSeconds = 0;
+let restTimerInterval = null;
+
+function formatTimerSec(totalSec) {
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function startRestTimer(seconds) {
+  restTimerSeconds = seconds;
+  if (restTimerInterval) clearInterval(restTimerInterval);
+  restTimerInterval = setInterval(() => {
+    if (restTimerSeconds > 0) {
+      restTimerSeconds--;
+      const displayEl = document.querySelector("#rest-timer-display");
+      if (displayEl) {
+        displayEl.textContent = formatTimerSec(restTimerSeconds);
+      }
+      if (restTimerSeconds === 0) {
+        clearInterval(restTimerInterval);
+        restTimerInterval = null;
+        playRestCompleteChime();
+        const displayEl = document.querySelector("#rest-timer-display");
+        if (displayEl) {
+          displayEl.textContent = "0:00 (Done!)";
+        }
+      }
+    }
+  }, 1000);
+}
+
 // URL parameter initialization (for deep-linking & testing)
 const initialParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
 
 // Heatmap & 3D Anatomy State
 let anatomyDisplayMode = initialParams?.get("anatomy") || "3d"; // "3d" (default) | "2d" (fallback/toggle)
+let heatmapFilterMode = "all"; // "all" | "hard"
+let selected1RMExercise = "";
 let active3DViewer = null;
 let presentationMode3D = initialParams?.get("mode") || "full"; // "full" (Mode A default) | "half" (Mode B)
 let splitMode3D = initialParams?.get("split") || "world"; // "world" (True Sagittal) | "camera" (View-Aligned)
@@ -623,6 +664,7 @@ function progressView() {
           <button type="button" class="${progressMetric === "protein" ? "active" : ""}" data-progress-metric="protein">Protein</button>
           <button type="button" class="${progressMetric === "sets" ? "active" : ""}" data-progress-metric="sets">Training Sets</button>
           <button type="button" class="${progressMetric === "minutes" ? "active" : ""}" data-progress-metric="minutes">Active Mins</button>
+          <button type="button" class="${progressMetric === "1rm" ? "active" : ""}" data-progress-metric="1rm">1RM Strength</button>
         </div>
 
         <div class="chart-pill-group" role="tablist" aria-label="Select time range">
@@ -633,8 +675,70 @@ function progressView() {
       </div>
 
       <div class="chart-wrapper">
-        ${targetLineHtml}
-        <div class="chart">${dayBars}</div>
+        ${
+          progressMetric === "1rm"
+            ? (() => {
+                const allRecordedExercises = Array.from(
+                  new Set(
+                    data.workouts.flatMap((w) => (w.exercises || []).map((e) => e.name).filter(Boolean))
+                  )
+                ).sort();
+
+                if (!selected1RMExercise && allRecordedExercises.length > 0) {
+                  selected1RMExercise = allRecordedExercises[0];
+                }
+
+                const series1RM = selected1RMExercise ? e1rmSeries(data.workouts, selected1RMExercise) : [];
+                const allTimeBest = selected1RMExercise ? best1RM(data.workouts, selected1RMExercise) : null;
+
+                return `
+                  <div style="margin-bottom:12px;">
+                    <label style="font-size:11px; font-weight:700; color:var(--muted); display:block; margin-bottom:4px;">SELECT EXERCISE FOR 1RM STRENGTH CURVE:</label>
+                    <select id="select-1rm-ex" style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--line); background:var(--paper); font-size:13px; font-weight:600;">
+                      ${allRecordedExercises.length ? allRecordedExercises.map((name) => `<option value="${esc(name)}" ${name === selected1RMExercise ? "selected" : ""}>${esc(name)}</option>`).join("") : `<option value="">No weighted exercises recorded yet</option>`}
+                    </select>
+                  </div>
+                  ${
+                    allTimeBest
+                      ? `<div class="day-inspect-card" style="margin-bottom:12px; border-color:#3e8879;">
+                          <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                              <span style="font-size:10px; text-transform:uppercase; color:var(--muted); font-weight:700;">ALL-TIME 1RM RECORD</span>
+                              <h3 style="margin:2px 0 0; font-size:18px; color:#27574d;">${allTimeBest.est} kg</h3>
+                            </div>
+                            <span class="tag-badge" style="background:#eaf2e8; color:#3b6b32;">${allTimeBest.weight} kg × ${allTimeBest.reps} reps</span>
+                          </div>
+                          <small style="color:var(--muted); display:block; margin-top:4px;">Achieved on ${dateLabel(allTimeBest.date)} (Epley formula: w × (1 + r/30))</small>
+                        </div>`
+                      : ""
+                  }
+                  <div class="chart" style="min-height:160px; display:flex; align-items:flex-end; gap:6px;">
+                    ${
+                      series1RM.length
+                        ? (() => {
+                            const max1rm = Math.max(...series1RM.map((s) => s.est), 10);
+                            return series1RM.slice(-10).map((p) => {
+                              const heightPct = Math.min(100, Math.max(12, Math.round((p.est / max1rm) * 100)));
+                              return `
+                                <div class="day-bar" style="flex:1;">
+                                  <span class="day-bar-val">${p.est}kg</span>
+                                  <span style="height:${heightPct}%; background:#3e8879;"></span>
+                                  <small>${dateLabel(p.date)}</small>
+                                  <div style="font-size:9px; color:var(--muted); font-family:'DM Mono', monospace;">${p.weight}×${p.reps}</div>
+                                </div>
+                              `;
+                            }).join("");
+                          })()
+                        : `<div style="width:100%; text-align:center; padding:30px 10px; color:var(--muted); font-size:12px;">No weighted sets with <= 12 reps for this exercise yet.</div>`
+                    }
+                  </div>
+                `;
+              })()
+            : `
+              ${targetLineHtml}
+              <div class="chart">${dayBars}</div>
+            `
+        }
       </div>
 
       <p class="form-help" style="margin-top:6px; font-size:11px; text-align:center;">
@@ -752,7 +856,7 @@ function workoutView() {
   // 1. Daily Heatmap calculation for activeDate
   const sessionsOnActiveDate = data.workouts.filter((w) => w.date === activeDate);
   const list = [...sessionsOnActiveDate].sort((a, b) => (b.time || "").localeCompare(a.time || ""));
-  const heatmapData = calculateDailyHeatmap(sessionsOnActiveDate, DEFAULT_HEATMAP_THRESHOLDS);
+  const heatmapData = calculateDailyHeatmap(sessionsOnActiveDate, DEFAULT_HEATMAP_THRESHOLDS, heatmapFilterMode);
   const isTrainedDay = heatmapData !== null;
   const muscleMap = isTrainedDay ? heatmapData.muscles : {};
 
@@ -790,6 +894,13 @@ function workoutView() {
   const is3DSupported = isWebGLAvailable();
   const is3DActive = is3DSupported && anatomyDisplayMode === "3d";
 
+  const filterSelectorHtml = `
+    <div class="anatomy-mode-tabs" role="tablist" aria-label="Stimulus filter">
+      <button type="button" class="${heatmapFilterMode === 'all' ? 'active' : ''}" data-heatmap-filter="all">All Sets</button>
+      <button type="button" class="${heatmapFilterMode === 'hard' ? 'active' : ''}" data-heatmap-filter="hard">Hard (RPE≥8)</button>
+    </div>
+  `;
+
   const anatomySelectorHtml = `
     <div class="anatomy-mode-tabs" role="tablist" aria-label="Anatomy viewer format">
       <button type="button" class="${is3DActive ? 'active' : ''}" data-anatomy-display="3d">3D</button>
@@ -826,7 +937,10 @@ function workoutView() {
           <button type="button" class="button ghost small-button" data-date="1" aria-label="Next day">›</button>
           ${activeDate !== localDate() ? `<button type="button" class="text-button" id="btn-heatmap-today" style="font-size:11px; margin-left:4px;">Today</button>` : ""}
         </div>
-        ${anatomySelectorHtml}
+        <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+          ${filterSelectorHtml}
+          ${anatomySelectorHtml}
+        </div>
       </div>
 
       ${statusNoteHtml}
@@ -845,7 +959,7 @@ function workoutView() {
         <div class="legend-item"><span class="legend-color" style="background:#51406F;"></span> 20+ (Elite)</div>
       </div>
       <p class="form-help" style="font-size:10px; margin-top:8px; text-align:center; color:var(--muted);">
-        Thresholds represent logged set volume for ${dateLabel(activeDate)} only, not scientific training quality.
+        Thresholds represent ${heatmapFilterMode === "hard" ? "hard stimulus sets (RPE≥8 / RIR≤2)" : "logged set volume"} for ${dateLabel(activeDate)} only, not scientific training quality.
       </p>
     </section>
   `;
@@ -1069,6 +1183,24 @@ function workoutEditorView() {
         : ""
     }
 
+    <!-- REST TIMER WITH SOUND & HAPTIC ALERTS -->
+    <div class="rest-timer-bar">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:20px;">⏱</span>
+        <div>
+          <span style="font-size:10px; font-weight:700; text-transform:uppercase; color:var(--muted); display:block;">REST TIMER (SOUND &amp; HAPTICS)</span>
+          <strong id="rest-timer-display" style="font-size:16px; font-family:'DM Mono', monospace;">${formatTimerSec(restTimerSeconds)}</strong>
+        </div>
+      </div>
+      <div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap;">
+        <button type="button" class="button ghost small-button" data-timer-add="30">+30s</button>
+        <button type="button" class="button ghost small-button" data-timer-add="60">+60s</button>
+        <button type="button" class="button ghost small-button" data-timer-add="90">+90s</button>
+        <button type="button" class="button ghost small-button" data-timer-add="120">+2m</button>
+        <button type="button" class="button ghost small-button" data-timer-reset>Reset</button>
+      </div>
+    </div>
+
     <form id="workout-editor-form" class="form-card">
       <div class="two">
         <label>Workout Date *
@@ -1182,7 +1314,10 @@ function workoutEditorView() {
                             .join("")}
                         </tbody>
                       </table>
-                      <button type="button" class="btn-add-set" data-add-set="${exIdx}">+ Add Set</button>
+                      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px;">
+                        <button type="button" class="btn-add-set" data-add-set="${exIdx}">+ Add Set</button>
+                        <button type="button" class="button ghost small-button" data-suggest-progression="${exIdx}" title="Auto-calculate next target based on past performance">⚡ Suggest Target</button>
+                      </div>
                     </div>`;
                   })
                   .join("")}
@@ -1234,6 +1369,19 @@ function dataView() {
         <button type="button" class="button danger-button" id="btn-replace-import">Replace All Data</button>
       </div>
       <small class="form-help">"Merge" combines records without duplicate entries. "Replace" completely overwrites local data.</small>
+    </section>
+
+    <section class="data-card">
+      <h2>Import from Other Apps (Hevy, Strong, FitNotes)</h2>
+      <p>Import your workout logs from Hevy, Strong, FitNotes, or standard CSV exports. Workouts and exercises are seamlessly merged into your local training history.</p>
+      <label class="photo-picker">
+        <input id="import-csv-file" type="file" accept=".csv,text/csv,text/plain" />
+        <span id="import-csv-file-name">Select workout CSV export</span>
+      </label>
+      <div style="margin-top:10px;">
+        <button type="button" class="button primary" id="btn-import-csv">Import Workout CSV</button>
+      </div>
+      <small class="form-help">Supports CSV formats from Hevy, Strong App, and FitNotes (automatic lbs-to-kg conversion and canonical muscle mapping).</small>
     </section>
 
     <section class="data-card danger">
@@ -1550,6 +1698,13 @@ function layout() {
     previousRenderedView = activeView;
   }
 
+  // Screen Wake Lock: active during active training in workout editor
+  if (activeView === "workout_editor") {
+    requestWakeLock();
+  } else {
+    releaseWakeLock();
+  }
+
   // Hydrate photo thumbnails asynchronously if on todayView or foodView
   if (activeView === "today") {
     const todayEntries = data.entries.filter((x) => x.date === activeDate && x.photoId);
@@ -1592,7 +1747,7 @@ function layout() {
         active3DViewer = null;
       }
       const sessionsOnActiveDate = data.workouts.filter((w) => w.date === activeDate);
-      const heatmapData = calculateDailyHeatmap(sessionsOnActiveDate, DEFAULT_HEATMAP_THRESHOLDS);
+      const heatmapData = calculateDailyHeatmap(sessionsOnActiveDate, DEFAULT_HEATMAP_THRESHOLDS, heatmapFilterMode);
 
       createAnatomy3DViewer(mountEl, {
         heatmapData,
@@ -1756,6 +1911,19 @@ document.addEventListener("click", (event) => {
   const heatmapViewToggle = event.target.closest("[data-heatmap-view]");
   if (heatmapViewToggle) {
     heatmapAnatomyView = heatmapViewToggle.dataset.heatmapView;
+    layout();
+    return;
+  }
+
+  // Heatmap Stimulus Filter (All Sets vs Hard Sets RPE>=8)
+  const heatmapFilterBtn = event.target.closest("[data-heatmap-filter]");
+  if (heatmapFilterBtn) {
+    heatmapFilterMode = heatmapFilterBtn.dataset.heatmapFilter;
+    if (active3DViewer) {
+      const sessionsOnActiveDate = data.workouts.filter((w) => w.date === activeDate);
+      const heatmapData = calculateDailyHeatmap(sessionsOnActiveDate, DEFAULT_HEATMAP_THRESHOLDS, heatmapFilterMode);
+      active3DViewer.updateState({ heatmapData });
+    }
     layout();
     return;
   }
@@ -1952,6 +2120,49 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  // Rest timer controls
+  const timerAddBtn = event.target.closest("[data-timer-add]");
+  if (timerAddBtn) {
+    const secs = Number(timerAddBtn.dataset.timerAdd) || 30;
+    startRestTimer(restTimerSeconds + secs);
+    const displayEl = document.querySelector("#rest-timer-display");
+    if (displayEl) displayEl.textContent = formatTimerSec(restTimerSeconds);
+    return;
+  }
+
+  if (event.target.closest("[data-timer-reset]")) {
+    if (restTimerInterval) {
+      clearInterval(restTimerInterval);
+      restTimerInterval = null;
+    }
+    restTimerSeconds = 0;
+    const displayEl = document.querySelector("#rest-timer-display");
+    if (displayEl) displayEl.textContent = formatTimerSec(0);
+    return;
+  }
+
+  // Suggest next progression target
+  const suggestProgressionBtn = event.target.closest("[data-suggest-progression]");
+  if (suggestProgressionBtn) {
+    const exIdx = Number(suggestProgressionBtn.dataset.suggestProgression);
+    if (editingWorkoutSession?.exercises?.[exIdx]) {
+      const ex = editingWorkoutSession.exercises[exIdx];
+      const prescription = suggestNextPrescription(data.workouts, ex.name, "linear");
+      if (prescription) {
+        if (!Array.isArray(ex.sets)) ex.sets = [];
+        ex.sets.push({
+          id: uid(),
+          reps: prescription.suggestedReps,
+          weight: prescription.suggestedWeight,
+          effort: "RPE 8"
+        });
+        alert(`Target Suggested for ${ex.name}:\n${prescription.suggestedWeight} kg × ${prescription.suggestedReps} reps\n${prescription.reason}`);
+        layout();
+      }
+    }
+    return;
+  }
+
   const addSetBtn = event.target.closest("[data-add-set]");
   if (addSetBtn) {
     const exIdx = Number(addSetBtn.dataset.addSet);
@@ -2134,6 +2345,37 @@ document.addEventListener("click", (event) => {
       return;
     }
   }
+
+  // Multi-app CSV Import (Hevy, Strong, FitNotes)
+  const csvFileInput = document.querySelector("#import-csv-file");
+  if (event.target.id === "btn-import-csv") {
+    if (!csvFileInput || !csvFileInput.files || !csvFileInput.files[0]) {
+      alert("Please choose a CSV file first.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const result = importWorkoutCSV(reader.result, data.customExercises);
+        if (result.workouts.length === 0) {
+          alert("No valid workout sessions could be found or imported from this CSV.");
+          return;
+        }
+        data.workouts = [...(data.workouts || []), ...result.workouts];
+        if (result.customExercises && result.customExercises.length > 0) {
+          data.customExercises = [...(data.customExercises || []), ...result.customExercises];
+        }
+        persist();
+        alert(`Successfully imported ${result.workouts.length} workout sessions and ${result.customExercises.length} custom exercises!`);
+        activeView = "workouts";
+        layout();
+      } catch (err) {
+        alert("Failed to import CSV: " + err.message);
+      }
+    };
+    reader.readAsText(csvFileInput.files[0]);
+    return;
+  }
 });
 
 // Non-destructive targeted update for food estimation input without full DOM re-render
@@ -2253,6 +2495,16 @@ document.addEventListener("change", (event) => {
 
   if (event.target.id === "import-file" && event.target.files[0]) {
     document.querySelector("#import-file-name").textContent = event.target.files[0].name;
+  }
+
+  if (event.target.id === "import-csv-file" && event.target.files[0]) {
+    const fnEl = document.querySelector("#import-csv-file-name");
+    if (fnEl) fnEl.textContent = event.target.files[0].name;
+  }
+
+  if (event.target.id === "select-1rm-ex") {
+    selected1RMExercise = event.target.value;
+    layout();
   }
 });
 
