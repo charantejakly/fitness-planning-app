@@ -556,6 +556,14 @@ function profileView() {
 }
 
 // ---------------- PROGRESS & WEEKLY REPORTS VIEW ----------------
+function formatGridVal(n) {
+  if (n >= 1000) {
+    const k = Math.round((n / 1000) * 10) / 10;
+    return `${k}k`;
+  }
+  return String(Math.round(n));
+}
+
 function progressView() {
   const analytics = calculateProgressAnalytics(data, activeDate, progressRange);
   const targetCal = targetCalories(data.profile);
@@ -566,48 +574,48 @@ function progressView() {
   let metricUnit = "kcal";
   let targetRefVal = null;
   let maxVal = 10;
-  let barColor = "#79956b";
+  let barColor = "#10b981";
 
   if (progressMetric === "calories") {
     metricLabel = "Daily Calories";
     metricUnit = "kcal";
     targetRefVal = targetCal;
     maxVal = Math.max(targetCal || 2000, ...analytics.days.map((d) => d.totals.calories), 500);
-    barColor = "#79956b";
+    barColor = "#10b981";
   } else if (progressMetric === "protein") {
     metricLabel = "Daily Protein";
     metricUnit = "g";
     targetRefVal = targetProtein;
     maxVal = Math.max(targetProtein || 120, ...analytics.days.map((d) => d.totals.protein), 30);
-    barColor = "#3e8879";
+    barColor = "#0d9488";
   } else if (progressMetric === "sets") {
     metricLabel = "Lifting Sets (Volume)";
     metricUnit = "sets";
     targetRefVal = null;
     maxVal = Math.max(15, ...analytics.days.map((d) => d.sets), 5);
-    barColor = "#e98a32";
+    barColor = "#f97316";
   } else if (progressMetric === "minutes") {
     metricLabel = "Active Workout Time";
     metricUnit = "min";
     targetRefVal = null;
     maxVal = Math.max(60, ...analytics.days.map((d) => d.minutes), 20);
-    barColor = "#51406f";
+    barColor = "#8b5cf6";
   }
 
-  // Target reference line
+  // Target reference line (Bklit style dashed guide)
   let targetLineHtml = "";
   if (targetRefVal && targetRefVal > 0 && maxVal > 0) {
     const targetPercent = Math.min(100, Math.max(5, Math.round((targetRefVal / maxVal) * 100)));
     targetLineHtml = `
-      <div class="chart-target-line" style="bottom:${targetPercent}%;">
-        <span>Target: ${number(targetRefVal)} ${metricUnit}</span>
+      <div class="bklit-target-line" style="bottom:${targetPercent}%;">
+        <span class="bklit-target-badge">Target: ${number(targetRefVal)} ${metricUnit}</span>
       </div>
     `;
   }
 
-  // Days bars
+  // Days bars with Bklit UI composable architecture: Track + Sheen Fill + Popover Tooltip + XAxis
   const dayBars = analytics.days
-    .map((d) => {
+    .map((d, index, arr) => {
       let val = 0;
       if (progressMetric === "calories") val = d.totals.calories;
       else if (progressMetric === "protein") val = d.totals.protein;
@@ -619,24 +627,76 @@ function progressView() {
 
       let customBarColor = barColor;
       if (val === 0) {
-        customBarColor = "var(--line)";
+        customBarColor = "rgba(120, 140, 110, 0.22)";
       } else if (progressMetric === "calories" && targetCal && val > targetCal) {
-        customBarColor = "#b88e40";
+        customBarColor = "#f59e0b"; // Amber for over target
       }
 
-      const valLabel = val ? `${number(val)}${metricUnit === "g" ? "g" : ""}` : "—";
+      const valLabel = val ? `${number(val)}${metricUnit === "g" ? "g" : ""}` : "0";
       const weekdayDisplay = progressRange > 14 ? d.weekdayNarrow : d.weekdayShort;
+      const dayNum = Number(d.date.split("-")[2]);
+
+      const dateObj = new Date(`${d.date}T12:00:00`);
+      const fullDateLabel = new Intl.DateTimeFormat("en-IN", { weekday: "short", day: "numeric", month: "short" }).format(dateObj);
+
+      let tooltipSub = "";
+      if (progressMetric === "calories" && targetCal) {
+        const diff = val - targetCal;
+        tooltipSub = diff > 0
+          ? `<span style="color:#fbbf24;">+${number(diff)} kcal over target</span>`
+          : `<span style="color:#34d399;">${number(Math.abs(diff))} kcal remaining</span>`;
+      } else if (progressMetric === "protein" && targetProtein) {
+        const diff = val - targetProtein;
+        tooltipSub = diff >= 0
+          ? `<span style="color:#34d399;">Target met (${number(val)}/${number(targetProtein)}g)</span>`
+          : `<span style="color:#93c5fd;">${number(Math.abs(diff))}g to target</span>`;
+      }
+
+      const tags = [];
+      if (d.hasFood) tags.push("🥗 Food");
+      if (d.hasWorkout) tags.push(`🏋 ${d.sets}s`);
+      if (d.isCompleted) tags.push("✓ Done");
+      const tooltipTags = tags.length ? tags.join(" · ") : "Rest / Unlogged";
 
       const dots = [];
       if (d.hasFood) dots.push(`<span class="day-bar-dot" title="Food logged"></span>`);
       if (d.hasWorkout) dots.push(`<span class="day-bar-dot workout" title="Workout logged (${d.sets} sets)"></span>`);
       if (d.isCompleted) dots.push(`<span class="day-bar-dot complete" title="Day completed"></span>`);
 
+      const edgeClass = index === 0 ? " edge-first" : index === arr.length - 1 ? " edge-last" : "";
+
       return `
-        <button type="button" class="day-bar ${isSelected ? "selected" : ""}" data-progress-day="${d.date}" aria-label="${d.weekdayShort} ${dateLabel(d.date)}: ${val} ${metricUnit}">
-          ${val > 0 && progressRange <= 14 ? `<span class="day-bar-val">${valLabel}</span>` : ""}
-          <span style="height:${heightPercent}%; background:${customBarColor}; ${val === 0 ? "opacity:0.35;" : ""}"></span>
-          <small>${weekdayDisplay}</small>
+        <button type="button" class="day-bar bklit-day-bar ${isSelected ? "selected" : ""}${edgeClass}" data-progress-day="${d.date}" aria-label="${d.weekdayShort} ${dateLabel(d.date)}: ${val} ${metricUnit}">
+          <!-- Bklit Floating Tooltip -->
+          <div class="bklit-tooltip" role="tooltip">
+            <div class="bklit-tooltip-header">${fullDateLabel}</div>
+            <div class="bklit-tooltip-row">
+              <span class="bklit-tooltip-dot" style="background:${customBarColor};"></span>
+              <span class="bklit-tooltip-label">${metricLabel}:</span>
+              <strong class="bklit-tooltip-val">${valLabel}</strong>
+            </div>
+            ${tooltipSub ? `<div class="bklit-tooltip-sub">${tooltipSub}</div>` : ""}
+            <div class="bklit-tooltip-tags">${tooltipTags}</div>
+            <div class="bklit-tooltip-arrow"></div>
+          </div>
+
+          <!-- Top value label for 7D view -->
+          ${val > 0 && progressRange <= 7 ? `<span class="day-bar-val bklit-top-val">${valLabel}</span>` : ""}
+
+          <!-- Bklit Bar Track with Depth Sheen Fill -->
+          <div class="bklit-bar-track">
+            <div class="bklit-bar-fill" style="height:${heightPercent}%; background:${customBarColor}; ${val === 0 ? "opacity:0.35;" : ""}">
+              <div class="bklit-bar-sheen"></div>
+            </div>
+          </div>
+
+          <!-- X-Axis Labels -->
+          <div class="bklit-bar-axis">
+            <span class="bklit-bar-weekday">${weekdayDisplay}</span>
+            ${progressRange <= 14 ? `<span class="bklit-bar-daynum">${dayNum}</span>` : ""}
+          </div>
+
+          <!-- Indicators -->
           <div class="day-bar-indicators">
             ${dots.join("")}
           </div>
@@ -794,31 +854,75 @@ function progressView() {
                         </div>`
                       : ""
                   }
-                  <div class="chart" style="min-height:160px; display:flex; align-items:flex-end; gap:6px;">
-                    ${
-                      series1RM.length
-                        ? (() => {
-                            const max1rm = Math.max(...series1RM.map((s) => s.est), 10);
-                            return series1RM.slice(-10).map((p) => {
-                              const heightPct = Math.min(100, Math.max(12, Math.round((p.est / max1rm) * 100)));
-                              return `
-                                <div class="day-bar" style="flex:1;">
-                                  <span class="day-bar-val">${p.est}kg</span>
-                                  <span style="height:${heightPct}%; background:#3e8879;"></span>
-                                  <small>${dateLabel(p.date)}</small>
-                                  <div style="font-size:9px; color:var(--muted); font-family:'DM Mono', monospace;">${p.weight}×${p.reps}</div>
+                  ${
+                    series1RM.length
+                      ? (() => {
+                          const max1rm = Math.max(...series1RM.map((s) => s.est), 10);
+                          const series1RMBars = series1RM.slice(-10).map((p, index, arr) => {
+                            const heightPct = Math.min(100, Math.max(12, Math.round((p.est / max1rm) * 100)));
+                            const pDateObj = new Date(`${p.date}T12:00:00`);
+                            const pDateStr = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short" }).format(pDateObj);
+                            const edgeClass = index === 0 ? " edge-first" : index === arr.length - 1 ? " edge-last" : "";
+
+                            return `
+                              <div class="day-bar bklit-day-bar${edgeClass}" style="flex:1;">
+                                <div class="bklit-tooltip" role="tooltip">
+                                  <div class="bklit-tooltip-header">${esc(selected1RMExercise)} · ${dateLabel(p.date)}</div>
+                                  <div class="bklit-tooltip-row">
+                                    <span class="bklit-tooltip-dot" style="background:#0284c7;"></span>
+                                    <span class="bklit-tooltip-label">Est 1RM:</span>
+                                    <strong class="bklit-tooltip-val">${p.est} kg</strong>
+                                  </div>
+                                  <div class="bklit-tooltip-sub">Lifted: ${p.weight} kg × ${p.reps} reps</div>
+                                  <div class="bklit-tooltip-tags">Epley formula: w × (1 + r/30)</div>
+                                  <div class="bklit-tooltip-arrow"></div>
                                 </div>
-                              `;
-                            }).join("");
-                          })()
-                        : `<div style="width:100%; text-align:center; padding:30px 10px; color:var(--muted); font-size:12px;">No weighted sets with <= 12 reps for this exercise yet.</div>`
-                    }
-                  </div>
+                                <span class="day-bar-val bklit-top-val">${p.est}kg</span>
+                                <div class="bklit-bar-track">
+                                  <div class="bklit-bar-fill" style="height:${heightPct}%; background:#0284c7;">
+                                    <div class="bklit-bar-sheen"></div>
+                                  </div>
+                                </div>
+                                <div class="bklit-bar-axis">
+                                  <span class="bklit-bar-weekday">${pDateStr}</span>
+                                  <span class="bklit-bar-daynum">${p.weight}×${p.reps}</span>
+                                </div>
+                              </div>
+                            `;
+                          }).join("");
+
+                          return `
+                            <div class="bklit-grid" aria-hidden="true">
+                              <div class="bklit-grid-line" style="bottom: 100%;"><span class="bklit-grid-val">${formatGridVal(max1rm)}</span></div>
+                              <div class="bklit-grid-line" style="bottom: 75%;"><span class="bklit-grid-val">${formatGridVal(max1rm * 0.75)}</span></div>
+                              <div class="bklit-grid-line" style="bottom: 50%;"><span class="bklit-grid-val">${formatGridVal(max1rm * 0.5)}</span></div>
+                              <div class="bklit-grid-line" style="bottom: 25%;"><span class="bklit-grid-val">${formatGridVal(max1rm * 0.25)}</span></div>
+                              <div class="bklit-grid-line" style="bottom: 0%;"><span class="bklit-grid-val">0</span></div>
+                            </div>
+                            <div class="chart bklit-chart-bars" style="gap:6px;">
+                              ${series1RMBars}
+                            </div>
+                          `;
+                        })()
+                      : `<div style="width:100%; text-align:center; padding:30px 10px; color:var(--muted); font-size:12px;">No weighted sets with <= 12 reps for this exercise yet.</div>`
+                  }
                 `;
               })()
             : `
+              <!-- Bklit Horizontal Grid Lines -->
+              <div class="bklit-grid" aria-hidden="true">
+                <div class="bklit-grid-line" style="bottom: 100%;"><span class="bklit-grid-val">${formatGridVal(maxVal)}</span></div>
+                <div class="bklit-grid-line" style="bottom: 75%;"><span class="bklit-grid-val">${formatGridVal(maxVal * 0.75)}</span></div>
+                <div class="bklit-grid-line" style="bottom: 50%;"><span class="bklit-grid-val">${formatGridVal(maxVal * 0.5)}</span></div>
+                <div class="bklit-grid-line" style="bottom: 25%;"><span class="bklit-grid-val">${formatGridVal(maxVal * 0.25)}</span></div>
+                <div class="bklit-grid-line" style="bottom: 0%;"><span class="bklit-grid-val">0</span></div>
+              </div>
+
               ${targetLineHtml}
-              <div class="chart">${dayBars}</div>
+
+              <div class="chart bklit-chart-bars" style="gap: ${progressRange > 14 ? "3px" : progressRange === 14 ? "5px" : "8px"};">
+                ${dayBars}
+              </div>
             `
         }
       </div>

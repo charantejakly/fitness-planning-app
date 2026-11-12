@@ -836,38 +836,78 @@ button {
   width: 100%;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 16px 12px 10px;
+  border-radius: 16px;
+  padding: 22px 14px 12px;
   box-sizing: border-box;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04);
 }
 
-.chart-target-line {
+/* Bklit / shadcn Data-Viz Grid Lines */
+.bklit-grid {
+  position: absolute;
+  top: 22px;
+  left: 14px;
+  right: 14px;
+  bottom: 42px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bklit-grid-line {
   position: absolute;
   left: 0;
   right: 0;
-  border-top: 1px dashed rgba(121, 149, 107, 0.6);
-  pointer-events: none;
-  z-index: 1;
+  border-top: 1px dashed rgba(120, 140, 110, 0.16);
+  height: 0;
 }
 
-.chart-target-line span {
+.bklit-grid-val {
+  position: absolute;
+  left: 2px;
+  top: -12px;
+  font: 9px/1 'DM Mono', monospace;
+  color: var(--muted);
+  opacity: 0.65;
+}
+
+.bklit-target-line {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  border-top: 1.5px dashed rgba(59, 130, 246, 0.7);
+  pointer-events: none;
+  z-index: 2;
+  transition: bottom 0.3s ease;
+}
+
+.bklit-target-badge {
   position: absolute;
   right: 4px;
-  top: -14px;
-  font: 9px 'DM Mono', monospace;
-  color: var(--muted);
-  background: var(--card);
-  padding: 0 2px;
+  top: -15px;
+  font: 9px/1.2 'DM Mono', monospace;
+  font-weight: 600;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 4px;
+  padding: 1px 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .chart {
-  height: 125px;
+  height: 185px;
   display: flex;
   gap: 6px;
-  align-items: end;
+  align-items: stretch;
   border-bottom: 1px solid var(--line);
-  padding: 0 4px;
+  padding: 0 4px 0 28px;
   position: relative;
+  z-index: 1;
+}
+
+/* Chart Bars hover dimmer (shadcn interactive feature) */
+.chart.bklit-chart-bars:hover .bklit-day-bar:not(:hover):not(.selected) {
+  opacity: 0.5;
 }
 
 .day-bar {
@@ -877,54 +917,216 @@ button {
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  gap: 3px;
   background: none;
   border: none;
   padding: 0;
   cursor: pointer;
   outline: none;
   position: relative;
-  transition: transform 0.15s ease;
   user-select: none;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
 }
 
 .day-bar:hover,
-.day-bar:focus {
+.day-bar:focus-visible {
   transform: translateY(-2px);
+  z-index: 15;
 }
 
-.day-bar:hover span,
-.day-bar:focus span {
-  filter: brightness(1.15);
-}
-
-.day-bar.selected span {
-  box-shadow: 0 0 0 2px var(--ink);
-  filter: brightness(1.2);
-}
-
-.day-bar.selected small {
-  font-weight: 700;
-  color: var(--ink);
-}
-
-.day-bar span {
+/* Bklit Bar Track with Depth */
+.bklit-bar-track {
   width: 100%;
-  min-height: 3px;
-  border-radius: 4px 4px 0 0;
-  background: #79956b;
-  transition: height 0.2s ease, background 0.2s ease;
+  height: calc(100% - 34px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(120, 140, 110, 0.08);
+  border-radius: 6px 6px 2px 2px;
+  position: relative;
+  overflow: visible;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 
-.day-bar small {
-  font: 10px 'DM Mono', monospace;
+.day-bar.selected .bklit-bar-track {
+  background: rgba(120, 140, 110, 0.16);
+  box-shadow: 0 0 0 1.5px var(--ink);
+}
+
+.bklit-bar-fill {
+  width: 100%;
+  min-height: 4px;
+  border-radius: 6px 6px 2px 2px;
+  position: relative;
+  transition: height 0.35s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease, filter 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.bklit-bar-sheen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.05) 50%, rgba(0, 0, 0, 0.08) 100%);
+  pointer-events: none;
+}
+
+.day-bar:hover .bklit-bar-fill {
+  filter: brightness(1.12);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* X-Axis Labels (Bklit BarXAxis) */
+.bklit-bar-axis {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  height: 22px;
+  margin-top: 4px;
+}
+
+.bklit-bar-weekday {
+  font: 10px/1 'DM Mono', monospace;
+  font-weight: 600;
   color: var(--muted);
+  text-transform: uppercase;
 }
 
-.day-bar-val {
+.bklit-bar-daynum {
+  font: 9px/1 'DM Mono', monospace;
+  color: var(--muted);
+  opacity: 0.8;
+}
+
+.day-bar.selected .bklit-bar-weekday,
+.day-bar:hover .bklit-bar-weekday {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.bklit-top-val {
   font: 9px 'DM Mono', monospace;
-  color: var(--muted);
-  margin-bottom: 2px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 3px;
+  letter-spacing: -0.3px;
+}
+
+/* Bklit Floating Tooltip Popover */
+.bklit-tooltip {
+  position: absolute;
+  bottom: calc(100% - 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  background: #18181b;
+  color: #fafafa;
+  border: 1px solid #27272a;
+  border-radius: 8px;
+  padding: 8px 10px;
+  white-space: nowrap;
+  font-family: 'DM Mono', monospace;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 4px 10px -2px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.18s ease;
+}
+
+.day-bar:hover .bklit-tooltip,
+.day-bar:focus-visible .bklit-tooltip,
+.day-bar.selected .bklit-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.bklit-tooltip-header {
+  font-size: 10px;
+  color: #a1a1aa;
+  font-weight: 500;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #27272a;
+  padding-bottom: 3px;
+}
+
+.bklit-tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.bklit-tooltip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.bklit-tooltip-label {
+  color: #d4d4d8;
+  font-size: 11px;
+}
+
+.bklit-tooltip-val {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.bklit-tooltip-sub {
+  font-size: 10px;
+  margin-top: 3px;
+}
+
+.bklit-tooltip-tags {
+  font-size: 9px;
+  color: #a1a1aa;
+  margin-top: 3px;
+}
+
+.bklit-tooltip-arrow {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid #18181b;
+}
+
+/* Edge Boundary Clamping for Tooltips */
+.day-bar.edge-first .bklit-tooltip {
+  left: 0;
+  transform: translateX(0) translateY(4px);
+}
+.day-bar.edge-first:hover .bklit-tooltip,
+.day-bar.edge-first.selected .bklit-tooltip {
+  transform: translateX(0) translateY(0);
+}
+.day-bar.edge-first .bklit-tooltip-arrow {
+  left: 14px;
+  transform: none;
+}
+
+.day-bar.edge-last .bklit-tooltip {
+  left: auto;
+  right: 0;
+  transform: translateX(0) translateY(4px);
+}
+.day-bar.edge-last:hover .bklit-tooltip,
+.day-bar.edge-last.selected .bklit-tooltip {
+  transform: translateX(0) translateY(0);
+}
+.day-bar.edge-last .bklit-tooltip-arrow {
+  left: auto;
+  right: 14px;
+  transform: none;
 }
 
 .day-bar-indicators {
@@ -940,15 +1142,15 @@ button {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: #79956b;
+  background: #10b981;
 }
 
 .day-bar-dot.workout {
-  background: #e98a32;
+  background: #f97316;
 }
 
 .day-bar-dot.complete {
-  background: #51406f;
+  background: #8b5cf6;
 }
 
 .day-inspect-card {

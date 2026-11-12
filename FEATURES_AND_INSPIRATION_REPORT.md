@@ -196,3 +196,9 @@ All candidate packages identified from **LIFT**, **OpenNutriTracker**, and **Spa
    - Granular portions for liquid & semi-liquid foods (dal, curries, sambar, buttermilk, milk, lassi, rasam, soups, gravies) with explicit units (`bowl(s)`, `glass(es)`, `cup(s)`, `ml`, `scoop(s)`).
    - Dynamic macro recalculation (`calculateScaledNutrition`) scaling only the scalable liquid/semi-liquid portions while preserving fixed meal components in composite dishes (e.g., scaling dal in "2 rotis with dal").
    - Quick-tap portion chips (e.g. 0.5, 1, 1.5, 2, 3 bowls or 100, 150, 250, 300, 500 ml) with live macro preview and persisted portion details on logged cards.
+6. **Package 6 (Bklit / shadcn-Style Bar Chart Data-Viz Engine):**
+   - Native Vanilla JS & CSS recreation of `@bklit/bar-chart` composable architecture for Progress performance analytics and 1RM strength curves.
+   - Horizontal reference grid lines (`Grid`) with dynamic numeric Y-axis guide labels (0, 25%, 50%, 75%, 100%) and dashed target threshold line.
+   - Dual-tone depth sheen (`bklit-bar-sheen`) with rounded-top geometry and background capacity tracks (`bklit-bar-track`).
+   - Floating popover tooltips (`bklit-tooltip`) with triangular indicator, exact date, metric value, target difference badges, and activity indicator tags with edge boundary clamping.
+   - Fluid interactive focus states with non-active bar dimming and touch/keyboard accessibility.
