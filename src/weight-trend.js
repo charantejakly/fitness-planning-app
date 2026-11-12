@@ -180,3 +180,4 @@ export function forecastWeightGoal(measurements = [], targetWeightKg = null) {
     description: `On track to reach ${target} kg in ${daysRemaining} days (${new Intl.DateTimeFormat("en-IN", { month: "short", day: "numeric" }).format(forecast)}) at ${weeklyRate} kg/week.`
   };
 }
+

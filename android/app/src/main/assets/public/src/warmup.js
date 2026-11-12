@@ -68,3 +68,4 @@ export function generateWarmupSets(workWeightKg, style = "standard", barKg = 20,
 
   return sets;
 }
+

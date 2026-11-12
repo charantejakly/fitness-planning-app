@@ -55,12 +55,7 @@ import { computeWeightTrend, forecastWeightGoal, healthyWeightSpan } from "./wei
 import {
   calculateWaterTarget,
   updateWaterIntake,
-  evaluateWaterProgress,
-  startFast,
-  completeFast,
-  cancelFast,
-  getFastStatus,
-  FASTING_PRESETS
+  evaluateWaterProgress
 } from "./habits.js";
 
 let data = loadData();
@@ -255,50 +250,6 @@ function todayView() {
             <button type="button" class="button ghost small-button" data-water-add="250">+250ml</button>
             <button type="button" class="button ghost small-button" data-water-add="500">+500ml</button>
             <button type="button" class="button ghost small-button" data-water-add="-250">-250ml</button>
-          </div>
-        </section>
-      `;
-    })()}
-
-    <!-- INTERMITTENT FASTING TIMER (OPENNUTRITRACKER) -->
-    ${(() => {
-      const fastStatus = getFastStatus(data.fasting, new Date());
-      if (fastStatus.isActive) {
-        return `
-          <section class="habit-card" aria-label="Intermittent Fasting Timer">
-            <div style="display:flex; align-items:center; gap:10px;">
-              <span style="font-size:24px;">⏳</span>
-              <div>
-                <span style="font-size:10px; font-weight:700; text-transform:uppercase; color:var(--muted); display:block;">FASTING IN PROGRESS (${fastStatus.targetHours}h FAST)</span>
-                <strong style="font-size:15px; font-family:'DM Mono', monospace;">${fastStatus.elapsedFormatted}</strong>
-                <small style="display:block; color:var(--muted); font-size:10px;">${fastStatus.isTargetReached ? "✓ Target reached! Ready to break fast." : `${fastStatus.remainingFormatted} remaining (${fastStatus.percent}%)`}</small>
-              </div>
-            </div>
-            <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-              <button type="button" class="button primary small-button" data-fast-complete>Break Fast</button>
-              <button type="button" class="button ghost small-button" data-fast-cancel>Cancel</button>
-            </div>
-          </section>
-        `;
-      }
-      return `
-        <section class="habit-card" aria-label="Intermittent Fasting Timer">
-          <div style="display:flex; align-items:center; gap:10px;">
-            <span style="font-size:24px;">⏳</span>
-            <div>
-              <span style="font-size:10px; font-weight:700; text-transform:uppercase; color:var(--muted); display:block;">INTERMITTENT FASTING</span>
-              <strong style="font-size:13px;">No active fast</strong>
-              <small style="display:block; color:var(--muted); font-size:10px;">Track daily fasting &amp; eating intervals.</small>
-            </div>
-          </div>
-          <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-            <select id="select-fast-preset" style="padding:4px 6px; font-size:11px; border-radius:6px; border:1px solid var(--line); background:var(--paper);">
-              <option value="16">16:8 Fast</option>
-              <option value="18">18:6 Deep</option>
-              <option value="20">20:4 Warrior</option>
-              <option value="14">14:10 Circadian</option>
-            </select>
-            <button type="button" class="button ghost small-button" data-fast-start>Start Fast</button>
           </div>
         </section>
       `;
@@ -2102,33 +2053,6 @@ document.addEventListener("click", (event) => {
     data.waterLogs = updateWaterIntake(data.waterLogs, activeDate, delta);
     persist();
     layout();
-    return;
-  }
-
-  // Intermittent Fasting tracking (OpenNutriTracker)
-  if (event.target.closest("[data-fast-start]")) {
-    const presetSelect = document.querySelector("#select-fast-preset");
-    const hours = Number(presetSelect?.value) || 16;
-    data.fasting = startFast(hours, new Date());
-    persist();
-    layout();
-    return;
-  }
-
-  if (event.target.closest("[data-fast-complete]")) {
-    data.fasting = completeFast(data.fasting, new Date());
-    persist();
-    alert("Fast completed! Great work maintaining your fasting window.");
-    layout();
-    return;
-  }
-
-  if (event.target.closest("[data-fast-cancel]")) {
-    if (confirm("Cancel current fasting window?")) {
-      data.fasting = cancelFast(data.fasting, new Date());
-      persist();
-      layout();
-    }
     return;
   }
 

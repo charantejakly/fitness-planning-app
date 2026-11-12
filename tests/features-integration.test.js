@@ -155,11 +155,7 @@ import { computeWeightTrend, forecastWeightGoal, healthyWeightSpan } from "../sr
 import {
   calculateWaterTarget,
   updateWaterIntake,
-  evaluateWaterProgress,
-  startFast,
-  completeFast,
-  cancelFast,
-  getFastStatus
+  evaluateWaterProgress
 } from "../src/habits.js";
 
 test("Integration 6: Barbell Plate Solver and Warmup Set Workflow", () => {
@@ -290,7 +286,7 @@ test("Integration 8: EWMA Weight Smoothing, Velocity & Goal Forecast", () => {
   assert.equal(span.midpointKg, 70.3);
 });
 
-test("Integration 9: Daily Hydration and Intermittent Fasting Cycle", () => {
+test("Integration 9: Daily Hydration Tracking Cycle", () => {
   const targetMl = calculateWaterTarget(75);
   assert.equal(targetMl, 2650);
 
@@ -312,25 +308,4 @@ test("Integration 9: Daily Hydration and Intermittent Fasting Cycle", () => {
   assert.equal(finalProgress.currentMl, 2650);
   assert.equal(finalProgress.remainingMl, 0);
   assert.equal(finalProgress.percent, 100);
-
-  const now = new Date("2026-11-12T20:00:00Z");
-  const fastState = startFast(16, now);
-  const initStatus = getFastStatus(fastState, now);
-  assert.equal(initStatus.isActive, true);
-  assert.equal(initStatus.targetHours, 16);
-
-  const eightHoursLater = new Date("2026-11-13T04:00:00Z");
-  const midwayStatus = getFastStatus(fastState, eightHoursLater);
-  assert.equal(midwayStatus.percent, 50);
-  assert.equal(midwayStatus.isTargetReached, false);
-
-  const sixteenHoursLater = new Date("2026-11-13T12:00:00Z");
-  const completeStatus = getFastStatus(fastState, sixteenHoursLater);
-  assert.equal(completeStatus.percent, 100);
-  assert.equal(completeStatus.isTargetReached, true);
-
-  const finishedState = completeFast(fastState, sixteenHoursLater);
-  const finishedStatus = getFastStatus(finishedState, sixteenHoursLater);
-  assert.equal(finishedStatus.isActive, false);
-  assert.equal(finishedStatus.isCompleted, true);
 });

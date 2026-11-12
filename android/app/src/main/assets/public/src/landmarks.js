@@ -146,3 +146,4 @@ export function calculateWeeklyMuscleVolume(workouts = [], endDateStr) {
 
   return volumeMap;
 }
+

@@ -97,3 +97,4 @@ export function calculatePlates(targetKg, barKg = DEFAULT_BAR_KG, availablePlate
     summaryText
   };
 }
+

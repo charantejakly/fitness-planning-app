@@ -152,9 +152,9 @@ Based on scientific validity, local-first compatibility, and direct synergy with
 * **Source:** SparkyFitness (`weightTrend.ts`) & OpenNutriTracker (`healthy_weight_calc.dart`)
 * **Fit for LEAN MODE:** Bodyweight fluctuations from water and sodium often obscure real fat loss or muscle gain. A 7-day EWMA trend line on the Progress chart eliminates scale panic and projects the exact date (e.g. *"At your current rate of $-0.45\,\text{kg/week}$, you will reach $74\,\text{kg}$ on December 28"*).
 
-### Candidate 4: Daily Hydration (Water) & Fasting Window Tracker
-* **Source:** OpenNutriTracker (`water_intake_data_source.dart`, `features/fasting`)
-* **Fit for LEAN MODE:** Clean, minimalist hydration counter on the Today tab with quick-add cups ($+250\,\text{ml}$, $+500\,\text{ml}$) against a daily target ($35\,\text{ml/kg}$), plus an optional 16:8 intermittent fasting timer.
+### Candidate 4: Daily Hydration (Water) Tracker
+* **Source:** OpenNutriTracker (`water_intake_data_source.dart`)
+* **Fit for LEAN MODE:** Clean, minimalist hydration counter on the Today tab with quick-add cups ($+250\,\text{ml}$, $+500\,\text{ml}$) against an evidence-based daily target ($35\,\text{ml/kg}$).
 
 ---
 
@@ -175,7 +175,7 @@ Based on scientific validity, local-first compatibility, and direct synergy with
 
 ## Implementation Status (Completed)
 
-All 4 candidate packages identified from **LIFT**, **OpenNutriTracker**, and **SparkyFitness** have now been implemented, verified with 109 passing automated tests, integrated into the UI, synced to Capacitor Android, and compiled into the debug APK:
+All candidate packages identified from **LIFT**, **OpenNutriTracker**, and **SparkyFitness** have now been implemented, verified with 107 passing automated tests, integrated into the UI, synced to Capacitor Android, and compiled into the debug APK:
 
 1. **Package 1 (Barbell & Rack Suite):**
    - Barbell Plate sleeve calculator (`calculatePlates`) supporting IWF color-coded discs (25kg Red, 20kg Blue, 15kg Yellow, 10kg Green, 5kg White, 2.5kg Black, 1.25kg Silver).
@@ -190,8 +190,7 @@ All 4 candidate packages identified from **LIFT**, **OpenNutriTracker**, and **S
    - 14-day velocity rate ($\text{kg/week}$) and calendar goal date forecaster (`forecastWeightGoal`).
    - WHO Healthy Weight Span display (`healthyWeightSpan`) based on BMI 18.5–24.9 in Profile view.
    - Integrated into Progress view.
-4. **Package 4 (Daily Habits Suite):**
+4. **Package 4 (Hydration Tracking):**
    - Evidence-based hydration tracking ($35\,\text{ml/kg}$ target, one-tap ml logging, and progress gauge) in Today view.
-   - Intermittent fasting tracker (14:10, 16:8, 18:6, 20:4 presets, live elapsed countdown, and completion state machine) in Today view.
 
 

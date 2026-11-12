@@ -88,3 +88,4 @@ test("Landmarks: calculateWeeklyMuscleVolume aggregates 7-day sets accurately", 
   assert.equal(volume["quadriceps"], 3);
   assert.equal(volume["lats"], undefined);
 });
+

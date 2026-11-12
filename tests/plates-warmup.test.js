@@ -71,3 +71,4 @@ test("Warmup: Drops sets when working weight is equal to or below the barbell", 
   const sets = generateWarmupSets(20, "standard", 20, 2.5);
   assert.equal(sets.length, 0);
 });
+
