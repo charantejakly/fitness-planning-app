@@ -173,8 +173,25 @@ Based on scientific validity, local-first compatibility, and direct synergy with
 
 ---
 
-## Conclusion & Next Actions
+## Implementation Status (Completed)
 
-All externally inspired features currently in LEAN MODE (Wake Lock, WebAudio timer, 1RM curves, multi-app CSV parsing, RPE/RIR filters, and auto-progression) are fully operational, tested, and pushed to the remote repository.
+All 4 candidate packages identified from **LIFT**, **OpenNutriTracker**, and **SparkyFitness** have now been implemented, verified with 109 passing automated tests, integrated into the UI, synced to Capacitor Android, and compiled into the debug APK:
 
-The research above provides a blueprint for our next linear upgrades. You can pick any candidate package (e.g., Barbell Plate Solver, RP Volume Landmarks, or EWMA Weight Forecasting) to begin implementation whenever you are ready.
+1. **Package 1 (Barbell & Rack Suite):**
+   - Barbell Plate sleeve calculator (`calculatePlates`) supporting IWF color-coded discs (25kg Red, 20kg Blue, 15kg Yellow, 10kg Green, 5kg White, 2.5kg Black, 1.25kg Silver).
+   - Warm-up pyramid set generator (`generateWarmupSets`) supporting Wendler 5/3/1 ramp (40%, 60%, 80%) snapped to barbell increments.
+   - Interactive Plate Calculator modal in workout editor with real-time +/- steppers, sleeve disc visuals, and one-tap warmup injection.
+2. **Package 2 (RP Hypertrophy Science Landmarks):**
+   - Volume landmarks (MV, MEV, MAV, MRV) for all 16 canonical muscles from Dr. Mike Israetel's Renaissance Periodization literature.
+   - Trainee level scaling (beginner, intermediate, advanced) and 7-day rolling set volume aggregator (`calculateWeeklyMuscleVolume`).
+   - Integrated into inspected muscle detail card in Training heatmap.
+3. **Package 3 (Body Trend & Forecaster):**
+   - Exponentially Weighted Moving Average (`computeWeightTrend`, $\alpha = 0.25$ for $N=7$) smoothing daily weigh-ins and filtering out water/sodium noise.
+   - 14-day velocity rate ($\text{kg/week}$) and calendar goal date forecaster (`forecastWeightGoal`).
+   - WHO Healthy Weight Span display (`healthyWeightSpan`) based on BMI 18.5–24.9 in Profile view.
+   - Integrated into Progress view.
+4. **Package 4 (Daily Habits Suite):**
+   - Evidence-based hydration tracking ($35\,\text{ml/kg}$ target, one-tap ml logging, and progress gauge) in Today view.
+   - Intermittent fasting tracker (14:10, 16:8, 18:6, 20:4 presets, live elapsed countdown, and completion state machine) in Today view.
+
+

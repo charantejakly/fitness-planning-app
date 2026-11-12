@@ -48,6 +48,20 @@ import { estimate1RM, bestSet1RM, e1rmSeries, best1RM, is1RMRecord } from "./one
 import { parseEffort, isHardSet } from "./effort.js";
 import { importWorkoutCSV } from "./import-csv.js";
 import { suggestNextPrescription } from "./progression.js";
+import { calculatePlates } from "./plates.js";
+import { generateWarmupSets } from "./warmup.js";
+import { evaluateVolumeStatus, calculateWeeklyMuscleVolume } from "./landmarks.js";
+import { computeWeightTrend, forecastWeightGoal, healthyWeightSpan } from "./weight-trend.js";
+import {
+  calculateWaterTarget,
+  updateWaterIntake,
+  evaluateWaterProgress,
+  startFast,
+  completeFast,
+  cancelFast,
+  getFastStatus,
+  FASTING_PRESETS
+} from "./habits.js";
 
 let data = loadData();
 let activeDate = localDate();
@@ -63,6 +77,8 @@ let activePickerCategory = "All";
 let pickerSearchQuery = "";
 let editingExerciseMusclesIndex = null;
 let editingCustomExerciseId = null;
+let activePlateExerciseIndex = null;
+let plateCalcTargetWeight = 60;
 
 // Rest Timer & Workout Utilities
 let restTimerSeconds = 0;
@@ -220,6 +236,73 @@ function todayView() {
       ${macro("Fat", totals.fat, data.profile.fatTarget, "fat")}
       ${macro("Fibre", totals.fibre, data.profile.fibreTarget, "fibre")}
     </section>
+
+    <!-- DAILY HYDRATION TRACKER (OPENNUTRITRACKER) -->
+    ${(() => {
+      const waterTarget = calculateWaterTarget(data.profile.weight);
+      const water = evaluateWaterProgress(data.waterLogs, activeDate, waterTarget);
+      return `
+        <section class="habit-card" aria-label="Daily Hydration Tracker">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:24px;">💧</span>
+            <div>
+              <span style="font-size:10px; font-weight:700; text-transform:uppercase; color:var(--muted); display:block;">HYDRATION (${water.percent}%)</span>
+              <strong style="font-size:15px;">${number(water.currentMl)} / ${number(water.targetMl)} <small>ml</small></strong>
+              <small style="display:block; color:var(--muted); font-size:10px;">Target: 35ml/kg · ${water.remainingMl > 0 ? `${number(water.remainingMl)} ml left` : "Daily goal reached! ✓"}</small>
+            </div>
+          </div>
+          <div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap;">
+            <button type="button" class="button ghost small-button" data-water-add="250">+250ml</button>
+            <button type="button" class="button ghost small-button" data-water-add="500">+500ml</button>
+            <button type="button" class="button ghost small-button" data-water-add="-250">-250ml</button>
+          </div>
+        </section>
+      `;
+    })()}
+
+    <!-- INTERMITTENT FASTING TIMER (OPENNUTRITRACKER) -->
+    ${(() => {
+      const fastStatus = getFastStatus(data.fasting, new Date());
+      if (fastStatus.isActive) {
+        return `
+          <section class="habit-card" aria-label="Intermittent Fasting Timer">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span style="font-size:24px;">⏳</span>
+              <div>
+                <span style="font-size:10px; font-weight:700; text-transform:uppercase; color:var(--muted); display:block;">FASTING IN PROGRESS (${fastStatus.targetHours}h FAST)</span>
+                <strong style="font-size:15px; font-family:'DM Mono', monospace;">${fastStatus.elapsedFormatted}</strong>
+                <small style="display:block; color:var(--muted); font-size:10px;">${fastStatus.isTargetReached ? "✓ Target reached! Ready to break fast." : `${fastStatus.remainingFormatted} remaining (${fastStatus.percent}%)`}</small>
+              </div>
+            </div>
+            <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+              <button type="button" class="button primary small-button" data-fast-complete>Break Fast</button>
+              <button type="button" class="button ghost small-button" data-fast-cancel>Cancel</button>
+            </div>
+          </section>
+        `;
+      }
+      return `
+        <section class="habit-card" aria-label="Intermittent Fasting Timer">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:24px;">⏳</span>
+            <div>
+              <span style="font-size:10px; font-weight:700; text-transform:uppercase; color:var(--muted); display:block;">INTERMITTENT FASTING</span>
+              <strong style="font-size:13px;">No active fast</strong>
+              <small style="display:block; color:var(--muted); font-size:10px;">Track daily fasting &amp; eating intervals.</small>
+            </div>
+          </div>
+          <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+            <select id="select-fast-preset" style="padding:4px 6px; font-size:11px; border-radius:6px; border:1px solid var(--line); background:var(--paper);">
+              <option value="16">16:8 Fast</option>
+              <option value="18">18:6 Deep</option>
+              <option value="20">20:4 Warrior</option>
+              <option value="14">14:10 Circadian</option>
+            </select>
+            <button type="button" class="button ghost small-button" data-fast-start>Start Fast</button>
+          </div>
+        </section>
+      `;
+    })()}
 
     <section class="section-head">
       <div>
@@ -441,6 +524,17 @@ function profileView() {
               <span>BMR <b>${number(bmr)} kcal</b></span>
               <span>Estimated TDEE <b>${number(tdee)} kcal</b></span>
             </div>`
+          : ""
+      }
+
+      ${
+        p.height
+          ? (() => {
+              const span = healthyWeightSpan(p.height);
+              return `<div class="boundary-note" style="margin:4px 0 12px; font-size:11px;">
+                <strong>WHO Healthy Weight Span for ${p.height} cm:</strong> ${span.minKg} – ${span.maxKg} kg (Midpoint: ${span.midpointKg} kg · BMI 18.5–24.9)
+              </div>`;
+            })()
           : ""
       }
 
@@ -792,6 +886,63 @@ function progressView() {
             ${topMusclesHtml}
           </div>
         </div>
+
+        ${(() => {
+          const trend = computeWeightTrend(data.measurements);
+          if (!trend || trend.length === 0) return "";
+          const latest = trend[trend.length - 1];
+          const forecast = forecastWeightGoal(data.measurements, data.profile.weightTarget);
+
+          let forecastHtml = "";
+          if (forecast.status !== "no_data" && forecast.status !== "no_goal") {
+            let statusBadgeClass = "tag-badge";
+            let statusColor = "#3b6b32";
+            let statusBg = "#eaf2e8";
+            let statusText = "On Track";
+
+            if (forecast.status === "achieved") {
+              statusText = "✓ Goal Weight Achieved";
+            } else if (forecast.status === "stalled_or_reversed") {
+              statusText = "⚠ Trajectory Stalled / Reversed";
+              statusColor = "#a32d26";
+              statusBg = "#faeae9";
+            } else if (forecast.status === "insufficient_data") {
+              statusText = "Need More Check-ins";
+              statusColor = "#925f12";
+              statusBg = "#fef7e8";
+            } else {
+              statusText = `Projected: ${dateLabel(forecast.forecastDate)} (${forecast.daysRemaining} days)`;
+            }
+
+            forecastHtml = `
+              <div style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--line); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                <div>
+                  <small style="font-size:10px; color:var(--muted); text-transform:uppercase; font-weight:700;">GOAL FORECASTER (${data.profile.weightTarget} kg Target)</small>
+                  <div style="font-size:12px; font-weight:600; margin-top:2px;">
+                    Rate: ${forecast.weeklyRate !== null ? `${forecast.weeklyRate > 0 ? "+" : ""}${forecast.weeklyRate} kg/week` : "Estimating"} · ${forecast.kgRemaining !== undefined ? `${forecast.kgRemaining} kg to goal` : ""}
+                  </div>
+                </div>
+                <span class="${statusBadgeClass}" style="background:${statusBg}; color:${statusColor}; font-size:11px; font-weight:700;">${statusText}</span>
+              </div>
+            `;
+          }
+
+          return `
+            <div style="margin-top:12px; padding:12px; background:var(--card); border:1px solid var(--line); border-radius:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                <div>
+                  <p class="eyebrow" style="margin:0 0 2px;">EWMA WEIGHT TREND (7-DAY SMOOTHING)</p>
+                  <h3 style="margin:0; font-size:16px;">
+                    ${latest.trendWeight} <small style="font-size:12px; font-weight:400; color:var(--muted);">kg (trend)</small>
+                    <span style="font-size:12px; color:var(--muted); font-weight:400; margin-left:6px;">(Raw: ${latest.rawWeight} kg)</span>
+                  </h3>
+                </div>
+                <small style="color:var(--muted); font-size:10px;">Exponentially removes water/glycogen noise</small>
+              </div>
+              ${forecastHtml}
+            </div>
+          `;
+        })()}
       </div>
     </section>
   </main>`;
@@ -835,6 +986,10 @@ function renderInspectCard(mId, heatmapData) {
     ? mInfo.secondaryInvolvement.map((e) => esc(e)).join(", ")
     : "None";
 
+  const weeklyVolume = calculateWeeklyMuscleVolume(data.workouts, activeDate);
+  const weeklySets = weeklyVolume[mId] || 0;
+  const landmark = evaluateVolumeStatus(mId, weeklySets, "intermediate");
+
   return `
     <div class="muscle-inspect-card" role="region" aria-label="Inspected muscle details">
       <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -848,6 +1003,20 @@ function renderInspectCard(mId, heatmapData) {
       <p style="margin:6px 0 2px; font-size:12px;"><strong>Primary Sets:</strong> ${sets} sets · <span style="color:${color === '#E8C84A' ? '#925f12' : color}; font-weight:600;">${esc(label)}</span></p>
       <p style="margin:2px 0; font-size:11px; color:var(--ink);"><strong>Contributing exercises (primary):</strong> ${contributingStr}</p>
       <p style="margin:2px 0; font-size:11px; color:var(--muted);"><strong>Secondary involvement (0 set credit):</strong> ${secondaryStr}</p>
+
+      <div style="margin-top:8px; padding-top:6px; border-top:1px dashed var(--line);">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
+          <span style="font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase;">RP VOLUME LANDMARK (7D)</span>
+          <span class="tag-badge" style="background:${landmark.color}22; color:${landmark.color}; font-weight:700; font-size:10px;">${esc(landmark.label)}</span>
+        </div>
+        <p style="margin:3px 0 0; font-size:11px; color:var(--ink);">${esc(landmark.description)}</p>
+        <div style="display:flex; gap:8px; font-size:10px; color:var(--muted); margin-top:3px; font-family:'DM Mono', monospace;">
+          <span>MV: ${landmark.mv}</span>
+          <span>MEV: ${landmark.mev}</span>
+          <span>MAV: ${landmark.mavMin}–${landmark.mavMax}</span>
+          <span>MRV: ${landmark.mrv}</span>
+        </div>
+      </div>
     </div>
   `;
 }
@@ -1314,9 +1483,11 @@ function workoutEditorView() {
                             .join("")}
                         </tbody>
                       </table>
-                      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px;">
+                      <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:8px;">
                         <button type="button" class="btn-add-set" data-add-set="${exIdx}">+ Add Set</button>
                         <button type="button" class="button ghost small-button" data-suggest-progression="${exIdx}" title="Auto-calculate next target based on past performance">⚡ Suggest Target</button>
+                        <button type="button" class="button ghost small-button" data-show-plates="${exIdx}" title="Show barbell plate sleeve loading breakdown">⚖ Plates</button>
+                        <button type="button" class="button ghost small-button" data-add-warmup="${exIdx}" title="Auto-insert progressive warmup sets">🔥 Warmup</button>
                       </div>
                     </div>`;
                   })
@@ -1638,6 +1809,59 @@ function recoveryConfigModalHtml() {
   </div>`;
 }
 
+function plateCalculatorModalHtml(exIdx) {
+  const currentEx = (editingWorkoutSession?.exercises || [])[exIdx];
+  const exName = currentEx ? currentEx.name : "Barbell Exercise";
+  const calc = calculatePlates(plateCalcTargetWeight, 20);
+
+  const platesHtml = calc.platesPerSide.length > 0
+    ? calc.platesPerSide.map((p) => {
+        return `<span class="plate-disc" style="background:${p.bg}; color:${p.text}; border: 1px solid ${p.border};">${p.count}× ${p.label}</span>`;
+      }).join(" ")
+    : `<span style="font-size:12px; color:var(--muted); font-style:italic;">Empty Barbell (No plates needed)</span>`;
+
+  const perSideWeight = calc.platesPerSide.reduce((s, p) => s + p.weightKg * p.count, 0);
+
+  return `
+    <div class="modal-backdrop">
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="plate-calc-title">
+        <button type="button" class="modal-close" data-close-modal aria-label="Close">×</button>
+        <p class="eyebrow">BARBELL RACK & SLEEVE SOLVER</p>
+        <h2 id="plate-calc-title">${esc(exName)}: Plate Calculator</h2>
+
+        <div style="background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:14px; margin:12px 0; text-align:center;">
+          <span style="font-size:11px; text-transform:uppercase; color:var(--muted); font-weight:700;">TARGET TOTAL WEIGHT</span>
+          <div style="display:flex; justify-content:center; align-items:center; gap:12px; margin:8px 0;">
+            <button type="button" class="button ghost" data-calc-plates-adjust="-5" style="font-size:16px; font-weight:700; width:40px; height:40px; border-radius:50%;">-5</button>
+            <button type="button" class="button ghost" data-calc-plates-adjust="-2.5" style="font-size:13px; font-weight:700; width:36px; height:36px; border-radius:50%;">-2.5</button>
+            <span style="font-size:32px; font-weight:800; font-family:'DM Mono', monospace; min-width:110px;">${plateCalcTargetWeight} <small style="font-size:14px; font-weight:400;">kg</small></span>
+            <button type="button" class="button ghost" data-calc-plates-adjust="2.5" style="font-size:13px; font-weight:700; width:36px; height:36px; border-radius:50%;">+2.5</button>
+            <button type="button" class="button ghost" data-calc-plates-adjust="5" style="font-size:16px; font-weight:700; width:40px; height:40px; border-radius:50%;">+5</button>
+          </div>
+          <small style="color:var(--muted); font-size:11px;">Standard Olympic 20kg barbell sleeve loading</small>
+        </div>
+
+        <div style="margin:14px 0;">
+          <label style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; display:block; margin-bottom:6px;">EACH SLEEVE (ONE SIDE):</label>
+          <div class="plate-sleeve">
+            ${platesHtml}
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; font-size:11px; color:var(--muted);">
+            <span>Achieved: <strong>${calc.achievedKg} kg</strong></span>
+            <span>Per sleeve: <strong>${perSideWeight} kg</strong></span>
+            ${!calc.exact ? `<span style="color:#b8392f;">Remainder: ${calc.remainderKg} kg</span>` : `<span style="color:#3b6b32; font-weight:600;">✓ Exact plate match</span>`}
+          </div>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-top:16px; flex-wrap:wrap;">
+          <button type="button" class="button primary" data-apply-plate-weight="${exIdx}" style="flex:1;">Apply to First Set</button>
+          <button type="button" class="button ghost" data-add-plates-warmup="${exIdx}" style="flex:1;">🔥 Insert Warmup Sets</button>
+        </div>
+      </section>
+    </div>
+  `;
+}
+
 // ---------------- MODAL SHEET (MEASUREMENT / TRAINING) ----------------
 function modal(kind, editId = null) {
   if (kind === "exercise_picker") return exercisePickerModalHtml();
@@ -1645,6 +1869,7 @@ function modal(kind, editId = null) {
   if (kind === "custom_exercises_manager") return customExercisesManagerModalHtml();
   if (kind === "custom_exercise_form") return customExerciseFormModalHtml(editingCustomExerciseId);
   if (kind === "recovery_config") return recoveryConfigModalHtml();
+  if (kind === "plate_calculator") return plateCalculatorModalHtml(activePlateExerciseIndex);
 
   const isMeasurement = kind === "measurement";
   const existing = data.measurements.find((x) => x.id === editId);
@@ -1866,6 +2091,44 @@ document.addEventListener("click", (event) => {
     }
     persist();
     layout();
+    return;
+  }
+
+  // Hydration tracking (OpenNutriTracker)
+  const waterAddBtn = event.target.closest("[data-water-add]");
+  if (waterAddBtn) {
+    const delta = Number(waterAddBtn.dataset.waterAdd) || 0;
+    if (!data.waterLogs || typeof data.waterLogs !== "object") data.waterLogs = {};
+    data.waterLogs = updateWaterIntake(data.waterLogs, activeDate, delta);
+    persist();
+    layout();
+    return;
+  }
+
+  // Intermittent Fasting tracking (OpenNutriTracker)
+  if (event.target.closest("[data-fast-start]")) {
+    const presetSelect = document.querySelector("#select-fast-preset");
+    const hours = Number(presetSelect?.value) || 16;
+    data.fasting = startFast(hours, new Date());
+    persist();
+    layout();
+    return;
+  }
+
+  if (event.target.closest("[data-fast-complete]")) {
+    data.fasting = completeFast(data.fasting, new Date());
+    persist();
+    alert("Fast completed! Great work maintaining your fasting window.");
+    layout();
+    return;
+  }
+
+  if (event.target.closest("[data-fast-cancel]")) {
+    if (confirm("Cancel current fasting window?")) {
+      data.fasting = cancelFast(data.fasting, new Date());
+      persist();
+      layout();
+    }
     return;
   }
 
@@ -2157,6 +2420,66 @@ document.addEventListener("click", (event) => {
           effort: "RPE 8"
         });
         alert(`Target Suggested for ${ex.name}:\n${prescription.suggestedWeight} kg × ${prescription.suggestedReps} reps\n${prescription.reason}`);
+        layout();
+      }
+    }
+    return;
+  }
+
+  // Barbell Plate Calculator modal trigger
+  const showPlatesBtn = event.target.closest("[data-show-plates]");
+  if (showPlatesBtn) {
+    activePlateExerciseIndex = Number(showPlatesBtn.dataset.showPlates);
+    const ex = editingWorkoutSession?.exercises?.[activePlateExerciseIndex];
+    const firstSetWeight = Number(ex?.sets?.[0]?.weight) || 60;
+    plateCalcTargetWeight = firstSetWeight > 0 ? firstSetWeight : 60;
+    openModal("plate_calculator");
+    return;
+  }
+
+  // Plate Calculator target adjustment (+/- stepper)
+  const calcAdjustBtn = event.target.closest("[data-calc-plates-adjust]");
+  if (calcAdjustBtn) {
+    const delta = Number(calcAdjustBtn.dataset.calcPlatesAdjust) || 0;
+    plateCalcTargetWeight = Math.max(20, Math.min(500, plateCalcTargetWeight + delta));
+    openModal("plate_calculator");
+    return;
+  }
+
+  // Plate Calculator: Apply weight to first set
+  const applyPlateBtn = event.target.closest("[data-apply-plate-weight]");
+  if (applyPlateBtn) {
+    const exIdx = Number(applyPlateBtn.dataset.applyPlateWeight);
+    if (editingWorkoutSession?.exercises?.[exIdx]) {
+      const sets = editingWorkoutSession.exercises[exIdx].sets;
+      if (sets && sets.length > 0) {
+        sets[0].weight = plateCalcTargetWeight;
+      }
+      document.querySelector(".modal-backdrop")?.remove();
+      layout();
+    }
+    return;
+  }
+
+  // Auto-generate Warmup Sets (Wendler 5/3/1 pyramid ramp)
+  const addWarmupBtn = event.target.closest("[data-add-warmup]") || event.target.closest("[data-add-plates-warmup]");
+  if (addWarmupBtn) {
+    const exIdx = Number(addWarmupBtn.dataset.addWarmup || addWarmupBtn.dataset.addPlatesWarmup);
+    if (editingWorkoutSession?.exercises?.[exIdx]) {
+      const ex = editingWorkoutSession.exercises[exIdx];
+      const targetWeight = Number(ex.sets?.[0]?.weight) || plateCalcTargetWeight || 60;
+      const warmupSets = generateWarmupSets(targetWeight, "standard", 20, 2.5);
+      if (warmupSets.length === 0) {
+        alert("Target weight is too close to or below bar weight (20kg) to generate warmup sets.");
+      } else {
+        const newSets = warmupSets.map((ws) => ({
+          id: uid(),
+          weight: ws.weight,
+          reps: ws.reps,
+          effort: "Warmup"
+        }));
+        ex.sets = [...newSets, ...(ex.sets || [])];
+        document.querySelector(".modal-backdrop")?.remove();
         layout();
       }
     }

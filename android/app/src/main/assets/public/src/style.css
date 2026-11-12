@@ -1127,6 +1127,44 @@ button {
   margin-top: 14px;
 }
 
+/* Habits: Hydration & Fasting Cards */
+.habit-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.plate-disc {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 5px 8px;
+  margin: 2px 4px 2px 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.plate-sleeve {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding: 10px;
+  background: #f0eee6;
+  border-radius: 10px;
+  margin-top: 8px;
+}
+
 /* ==========================================================================
    TRAINING & EXERCISE LOGGING (PHASE 1)
    ========================================================================== */

@@ -146,3 +146,191 @@ test("Integration 5: Screen Wake Lock and Sound utilities execute safely without
   assert.doesNotThrow(() => beep(440, 100));
   assert.doesNotThrow(() => vibrate(100));
 });
+
+// Import new packages for Integrations 6 - 9
+import { calculatePlates } from "../src/plates.js";
+import { generateWarmupSets } from "../src/warmup.js";
+import { evaluateVolumeStatus, calculateWeeklyMuscleVolume } from "../src/landmarks.js";
+import { computeWeightTrend, forecastWeightGoal, healthyWeightSpan } from "../src/weight-trend.js";
+import {
+  calculateWaterTarget,
+  updateWaterIntake,
+  evaluateWaterProgress,
+  startFast,
+  completeFast,
+  cancelFast,
+  getFastStatus
+} from "../src/habits.js";
+
+test("Integration 6: Barbell Plate Solver and Warmup Set Workflow", () => {
+  // Lifter intends to bench press 80kg with a 20kg bar
+  const targetWeight = 80;
+  const plateSolution = calculatePlates(targetWeight, 20);
+
+  assert.equal(plateSolution.achievedKg, 80);
+  assert.equal(plateSolution.exact, true);
+  assert.equal(plateSolution.barKg, 20);
+  // Per sleeve: 1x25kg (red) + 1x5kg (white) = 30kg (greedy fewest plates)
+  assert.deepEqual(
+    plateSolution.platesPerSide.map((p) => ({ weight: p.weightKg, count: p.count })),
+    [
+      { weight: 25, count: 1 },
+      { weight: 5, count: 1 }
+    ]
+  );
+
+  // Lifter generates standard Wendler warmup sets for 80kg
+  const warmups = generateWarmupSets(targetWeight, "standard", 20, 2.5);
+  // 40% of 80kg = 32 -> snapped to 32.5kg
+  // 60% of 80kg = 48 -> snapped to 47.5kg
+  // 80% of 80kg = 64 -> snapped to 65kg
+  assert.equal(warmups.length, 3);
+  assert.equal(warmups[0].weight, 32.5);
+  assert.equal(warmups[1].weight, 47.5);
+  assert.equal(warmups[2].weight, 65);
+  assert.ok(warmups.every((w) => w.effort === "warmup"));
+  assert.ok(warmups.every((w) => w.weight < targetWeight));
+});
+
+test("Integration 7: Trainee RP Volume Landmark Lifecycle", () => {
+  const mockWorkouts = [
+    {
+      date: "2026-11-05",
+      exercises: [
+        {
+          name: "Barbell Bench Press",
+          muscleMapping: { primary: ["chest"], secondary: ["triceps"] },
+          sets: [
+            { weight: 80, reps: 8, effort: "RPE 8" },
+            { weight: 80, reps: 8, effort: "RPE 8.5" },
+            { weight: 80, reps: 7, effort: "RPE 9" }
+          ]
+        }
+      ]
+    },
+    {
+      date: "2026-11-08",
+      exercises: [
+        {
+          name: "Incline Dumbbell Press",
+          muscleMapping: { primary: ["chest"], secondary: [] },
+          sets: [
+            { weight: 30, reps: 10, effort: "RIR 2" },
+            { weight: 30, reps: 9, effort: "RIR 1" },
+            { weight: 30, reps: 8, effort: "RIR 1" }
+          ]
+        },
+        {
+          name: "Lat Pulldown",
+          muscleMapping: { primary: ["lats"], secondary: ["biceps"] },
+          sets: [
+            { weight: 65, reps: 12, effort: "RPE 8" },
+            { weight: 65, reps: 10, effort: "RPE 9" }
+          ]
+        }
+      ]
+    },
+    {
+      date: "2026-11-11",
+      exercises: [
+        {
+          name: "Dips",
+          muscleMapping: { primary: ["chest"], secondary: ["triceps"] },
+          sets: [
+            { weight: 0, reps: 12, effort: "RPE 8" },
+            { weight: 0, reps: 10, effort: "RPE 9" }
+          ]
+        }
+      ]
+    }
+  ];
+
+  const weeklyVol = calculateWeeklyMuscleVolume(mockWorkouts, "2026-11-11");
+  assert.equal(weeklyVol.chest, 8);
+  assert.equal(weeklyVol.lats, 2);
+
+  // Evaluate Chest: 8 sets for intermediate lifter (MV=8, MEV=10)
+  const chestStatus = evaluateVolumeStatus("chest", weeklyVol.chest, "intermediate");
+  assert.equal(chestStatus.tier, "maintenance");
+  assert.equal(chestStatus.label, "Maintenance Volume");
+
+  // Evaluate Lats: 2 sets for intermediate lifter (MV=6, MEV=10)
+  const latsStatus = evaluateVolumeStatus("lats", weeklyVol.lats, "intermediate");
+  assert.equal(latsStatus.tier, "below_mv");
+  assert.equal(latsStatus.label, "Below Maintenance (Atrophy Risk)");
+});
+
+test("Integration 8: EWMA Weight Smoothing, Velocity & Goal Forecast", () => {
+  const weighIns = [
+    { date: "2026-11-01", weight: 82.0 },
+    { date: "2026-11-03", weight: 82.5 },
+    { date: "2026-11-05", weight: 81.8 },
+    { date: "2026-11-07", weight: 81.2 },
+    { date: "2026-11-09", weight: 81.4 },
+    { date: "2026-11-11", weight: 80.6 },
+    { date: "2026-11-14", weight: 80.2 }
+  ];
+
+  const trend = computeWeightTrend(weighIns, 0.25);
+  assert.equal(trend.length, 7);
+  assert.equal(trend[0].trendWeight, 82.0);
+
+  const latestTrend = trend[trend.length - 1];
+  assert.ok(latestTrend.trendWeight < 81.5 && latestTrend.trendWeight > 80.0);
+
+  const forecast = forecastWeightGoal(weighIns, 78.0);
+  assert.equal(forecast.status, "on_track");
+  assert.ok(forecast.weeklyRate < 0);
+  assert.ok(forecast.daysRemaining > 0);
+  assert.ok(forecast.forecastDate.startsWith("202"));
+
+  const span = healthyWeightSpan(180);
+  assert.equal(span.minKg, 59.9);
+  assert.equal(span.maxKg, 80.7);
+  assert.equal(span.midpointKg, 70.3);
+});
+
+test("Integration 9: Daily Hydration and Intermittent Fasting Cycle", () => {
+  const targetMl = calculateWaterTarget(75);
+  assert.equal(targetMl, 2650);
+
+  let waterLogs = {};
+  const activeDate = "2026-11-12";
+
+  waterLogs = updateWaterIntake(waterLogs, activeDate, 500);
+  waterLogs = updateWaterIntake(waterLogs, activeDate, 750);
+  waterLogs = updateWaterIntake(waterLogs, activeDate, 1000);
+
+  const progress = evaluateWaterProgress(waterLogs, activeDate, targetMl);
+  assert.equal(progress.currentMl, 2250);
+  assert.equal(progress.remainingMl, 400);
+  assert.equal(progress.percent, 85);
+  assert.equal(progress.remainingMl > 0, true);
+
+  waterLogs = updateWaterIntake(waterLogs, activeDate, 400);
+  const finalProgress = evaluateWaterProgress(waterLogs, activeDate, targetMl);
+  assert.equal(finalProgress.currentMl, 2650);
+  assert.equal(finalProgress.remainingMl, 0);
+  assert.equal(finalProgress.percent, 100);
+
+  const now = new Date("2026-11-12T20:00:00Z");
+  const fastState = startFast(16, now);
+  const initStatus = getFastStatus(fastState, now);
+  assert.equal(initStatus.isActive, true);
+  assert.equal(initStatus.targetHours, 16);
+
+  const eightHoursLater = new Date("2026-11-13T04:00:00Z");
+  const midwayStatus = getFastStatus(fastState, eightHoursLater);
+  assert.equal(midwayStatus.percent, 50);
+  assert.equal(midwayStatus.isTargetReached, false);
+
+  const sixteenHoursLater = new Date("2026-11-13T12:00:00Z");
+  const completeStatus = getFastStatus(fastState, sixteenHoursLater);
+  assert.equal(completeStatus.percent, 100);
+  assert.equal(completeStatus.isTargetReached, true);
+
+  const finishedState = completeFast(fastState, sixteenHoursLater);
+  const finishedStatus = getFastStatus(finishedState, sixteenHoursLater);
+  assert.equal(finishedStatus.isActive, false);
+  assert.equal(finishedStatus.isCompleted, true);
+});
