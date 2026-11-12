@@ -12,7 +12,7 @@ import {
   mergeData,
   DEFAULT_PROFILE
 } from "../src/store.js";
-import { estimateFood } from "../src/food-estimator.js";
+import { estimateFood, calculateScaledNutrition } from "../src/food-estimator.js";
 
 test("calculates Mifflin-St Jeor BMR and TDEE correctly", () => {
   // Male: 10*80 + 6.25*178 - 5*20 + 5 = 800 + 1112.5 - 100 + 5 = 1817.5 => 1818
@@ -72,6 +72,89 @@ test("estimates milk with quantity unit scaling", () => {
   const customMatch = estimateFood("2 whey protein bar", customFoods);
   assert.equal(customMatch.calories, 400);
   assert.equal(customMatch.protein, 40);
+});
+
+test("portion scaling for liquid and semi-liquid foods dynamically recalculates macros", () => {
+  // Dal scaling: 1 bowl vs 2 bowls
+  const dal = estimateFood("dal");
+  assert.equal(dal.quantityUnit, "bowl(s)");
+  assert.equal(dal.baseAmount, 1);
+  const dal1 = calculateScaledNutrition(dal, 1);
+  assert.equal(dal1.calories, 180);
+  assert.equal(dal1.protein, 10);
+  assert.equal(dal1.carbs, 27);
+  assert.equal(dal1.fat, 4);
+  assert.equal(dal1.fibre, 7);
+
+  const dal2 = calculateScaledNutrition(dal, 2);
+  assert.equal(dal2.calories, 360);
+  assert.equal(dal2.protein, 20);
+  assert.equal(dal2.carbs, 54);
+  assert.equal(dal2.fat, 8);
+  assert.equal(dal2.fibre, 14);
+
+  const dalHalf = calculateScaledNutrition(dal, 0.5);
+  assert.equal(dalHalf.calories, 90);
+  assert.equal(dalHalf.protein, 5);
+  assert.equal(dalHalf.carbs, 13.5);
+
+  // Curry scaling: 1 bowl vs 2 bowls
+  const chickenCurry = estimateFood("chicken curry");
+  assert.equal(chickenCurry.quantityUnit, "bowl(s)");
+  const curry1 = calculateScaledNutrition(chickenCurry, 1);
+  assert.equal(curry1.calories, 330);
+  assert.equal(curry1.protein, 19);
+
+  const curry2 = calculateScaledNutrition(chickenCurry, 2);
+  assert.equal(curry2.calories, 660);
+  assert.equal(curry2.protein, 38);
+
+  // Composite meal: 2 rotis with dal (scaling only scales the dal)
+  const rotisAndDal = estimateFood("2 rotis with dal");
+  assert.equal(rotisAndDal.quantityUnit, "bowl(s)");
+  const rotisWith1Dal = calculateScaledNutrition(rotisAndDal, 1);
+  assert.equal(rotisWith1Dal.calories, 400);
+  assert.equal(rotisWith1Dal.protein, 17);
+
+  const rotisWith2Dal = calculateScaledNutrition(rotisAndDal, 2);
+  // 2 rotis (220 kcal, 7g P) + 2 bowls dal (360 kcal, 20g P) = 580 kcal, 27g P
+  assert.equal(rotisWith2Dal.calories, 580);
+  assert.equal(rotisWith2Dal.protein, 27);
+  assert.equal(rotisWith2Dal.carbs, 98);
+  assert.equal(rotisWith2Dal.fat, 11);
+  assert.equal(rotisWith2Dal.fibre, 20);
+
+  // Buttermilk (glass)
+  const buttermilk = estimateFood("buttermilk");
+  assert.equal(buttermilk.quantityUnit, "glass(es)");
+  const bm1 = calculateScaledNutrition(buttermilk, 1);
+  assert.equal(bm1.calories, 70);
+  assert.equal(bm1.protein, 4);
+  const bm2 = calculateScaledNutrition(buttermilk, 2);
+  assert.equal(bm2.calories, 140);
+  assert.equal(bm2.protein, 8);
+
+  // Milk (ml): 250ml vs 500ml
+  const milk = estimateFood("milk");
+  assert.equal(milk.quantityUnit, "ml");
+  assert.equal(milk.baseAmount, 250);
+  const milk250 = calculateScaledNutrition(milk, 250);
+  assert.equal(milk250.calories, 150);
+  assert.equal(milk250.protein, 8);
+  const milk500 = calculateScaledNutrition(milk, 500);
+  assert.equal(milk500.calories, 300);
+  assert.equal(milk500.protein, 16);
+
+  // Natural language recognition of portion quantities
+  const dal2Parsed = estimateFood("2 bowls dal");
+  assert.equal(dal2Parsed.calories, 360);
+  assert.equal(dal2Parsed.protein, 20);
+  assert.equal(dal2Parsed.defaultAmount, 2);
+
+  const milk500Parsed = estimateFood("500 ml milk");
+  assert.equal(milk500Parsed.calories, 300);
+  assert.equal(milk500Parsed.protein, 16);
+  assert.equal(milk500Parsed.defaultAmount, 500);
 });
 
 test("calculates weeklySummary without assuming unlogged days are zero", () => {

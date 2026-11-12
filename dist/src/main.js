@@ -15,7 +15,7 @@ import {
   blankData,
   DEFAULT_PROFILE
 } from "./store.js";
-import { estimateFood } from "./food-estimator.js";
+import { estimateFood, calculateScaledNutrition } from "./food-estimator.js";
 import { saveAttachment, getAttachment, deleteAttachment } from "./idb.js";
 import {
   CANONICAL_CATALOG,
@@ -272,6 +272,11 @@ function todayView() {
 
 function foodCard(entry) {
   const photoId = entry.photoId;
+  const portionInfo = entry.amount && entry.quantityUnit
+    ? ` · ${entry.amount} ${entry.quantityUnit.replace("(s)", entry.amount === 1 ? "" : "s")}`
+    : entry.amountMl
+    ? ` · ${entry.amountMl} ml`
+    : "";
   return `<article class="food-card" data-entry-id="${entry.id}">
     <div class="food-icon" id="food-icon-${entry.id}">
       ${photoId ? `<img src="" id="photo-thumb-${entry.id}" alt="Food thumbnail" />` : "≈"}
@@ -279,7 +284,7 @@ function foodCard(entry) {
     <div class="food-main">
       <div>
         <h3>${esc(entry.name)}</h3>
-        <span>${esc(entry.meal || "Food log")} · ${entry.source === "estimate" ? "Estimated portion" : entry.source === "custom" ? "Custom item" : "Manual entry"}</span>
+        <span>${esc(entry.meal || "Food log")}${portionInfo} · ${entry.source === "estimate" ? "Estimated portion" : entry.source === "custom" ? "Custom item" : "Manual entry"}</span>
       </div>
       <b>${number(entry.calories)} <small>kcal</small></b>
       <p>P ${number(entry.protein)}g · C ${number(entry.carbs)}g · F ${number(entry.fat)}g · Fi ${number(entry.fibre)}g</p>
@@ -292,27 +297,58 @@ function foodCard(entry) {
 }
 
 // ---------------- FOOD LOGGING & ESTIMATION ----------------
+function getAmountPresets(unit) {
+  if (unit === "ml") return [100, 150, 200, 250, 300, 500];
+  if (unit === "bowl(s)") return [0.5, 1, 1.5, 2, 3];
+  if (unit === "glass(es)") return [0.5, 1, 1.5, 2];
+  if (unit === "cup(s)") return [0.5, 1, 1.5, 2];
+  if (unit === "scoop(s)") return [0.5, 1, 1.5, 2];
+  return [0.5, 1, 1.5, 2, 3];
+}
+
 function estimatePreviewHtml(estimate, amount = "") {
   if (!estimate) {
     return `<div class="estimate-fallback">
       <p class="form-help estimate-help" aria-live="polite">Food not recognized in Indian catalog yet. You can still log it using Manual Entry below.</p>
     </div>`;
   }
-  const quantity = estimate.quantityUnit ? Number(amount || estimate.baseAmount) : 1;
-  const factor = estimate.quantityUnit ? quantity / estimate.baseAmount : 1;
-  const values = {
-    calories: Math.round(estimate.calories * factor),
-    protein: Math.round(estimate.protein * factor),
-    carbs: Math.round(estimate.carbs * factor),
-    fat: Math.round(estimate.fat * factor),
-    fibre: Math.round(estimate.fibre * factor)
-  };
+  const initialQty = (amount !== "" && amount !== null && amount !== undefined)
+    ? Number(amount)
+    : (estimate.defaultAmount || estimate.baseAmount || 1);
+  const qty = Number.isFinite(initialQty) && initialQty > 0 ? initialQty : (estimate.baseAmount || 1);
+  const values = calculateScaledNutrition(estimate, qty);
+
+  const presets = estimate.quantityUnit ? getAmountPresets(estimate.quantityUnit) : [];
+  const step = estimate.quantityUnit === "ml" ? "10" : "0.5";
+  const min = estimate.quantityUnit === "ml" ? "10" : "0.25";
 
   return `<section class="estimate-card" aria-live="polite">
-    <p class="eyebrow">ESTIMATED NUTRITION</p>
+    <div class="estimate-card-header">
+      <p class="eyebrow">ESTIMATED NUTRITION</p>
+      ${estimate.quantityUnit ? `<span class="unit-badge">${esc(estimate.unitItemName || "portion")}: ${esc(estimate.quantityUnit)}</span>` : ""}
+    </div>
     ${
       estimate.quantityUnit
-        ? `<label class="amount-field">Amount consumed <span><input id="food-amount" type="number" min="1" max="5000" step="1" value="${quantity}" /> ${estimate.quantityUnit}</span></label>`
+        ? `<div class="amount-field-container">
+            <label class="amount-field" for="food-amount">
+              <span class="amount-field-label">Portion / Amount consumed (${esc(estimate.unitItemName || "item")}):</span>
+              <div class="amount-input-row">
+                <input id="food-amount" name="amount" type="number" min="${min}" max="5000" step="${step}" value="${qty}" />
+                <span class="amount-unit-suffix">${esc(estimate.quantityUnit)}</span>
+              </div>
+            </label>
+            <div class="amount-stepper-presets" role="group" aria-label="Quick portion presets">
+              ${presets
+                .map((p) => {
+                  const label = estimate.quantityUnit === "ml"
+                    ? `${p} ml`
+                    : `${p} ${estimate.quantityUnit.replace("(s)", p === 1 ? "" : "s")}`;
+                  const isActive = Math.abs(qty - p) < 0.001 ? " active" : "";
+                  return `<button type="button" class="amount-chip${isActive}" data-set-amount="${p}">${label}</button>`;
+                })
+                .join("")}
+            </div>
+          </div>`
         : ""
     }
     <div id="estimate-values">
@@ -338,6 +374,7 @@ function foodView() {
   };
 
   const initialEstimate = estimateFood(item.name, data.customFoods);
+  const initialAmount = item.amount || item.amountMl || "";
   const isEditingManual = Boolean(editing && editing.source === "manual");
   pendingPhotoData = null;
 
@@ -366,7 +403,7 @@ function foodView() {
       <p class="form-help">Include portions where possible (e.g., 2 rotis, 1 cup dal, 250 ml milk).</p>
 
       <div id="estimate-container" class="${isEditingManual ? "hidden" : ""}">
-        <div id="estimate-preview">${estimatePreviewHtml(initialEstimate, item.amountMl || "")}</div>
+        <div id="estimate-preview">${estimatePreviewHtml(initialEstimate, initialAmount)}</div>
       </div>
 
       <!-- Manual & Custom section -->
@@ -1997,6 +2034,18 @@ function csv(rows) {
 
 // ---------------- EVENT BUS ----------------
 document.addEventListener("click", (event) => {
+  // Quick-tap portion preset chips for liquid/semi-liquid foods
+  const amountChip = event.target.closest("[data-set-amount]");
+  if (amountChip) {
+    const val = amountChip.dataset.setAmount;
+    const inp = document.querySelector("#food-amount");
+    if (inp) {
+      inp.value = val;
+      inp.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    return;
+  }
+
   // Modal close on backdrop or X button
   if (event.target.closest("[data-close-modal]")) {
     document.querySelector(".modal-backdrop")?.remove();
@@ -2636,18 +2685,22 @@ document.addEventListener("input", (event) => {
     }
   }
 
-  // Update numbers when food-amount (milk etc) changes without losing focus!
+  // Update numbers when food-amount (milk, dal, curries, etc.) changes without losing focus!
   if (event.target.id === "food-amount") {
     const name = document.querySelector("#food-name")?.value || "";
     const est = estimateFood(name, data.customFoods);
     if (est && est.quantityUnit) {
       const amount = Number(event.target.value || est.baseAmount);
-      const factor = amount / est.baseAmount;
+      const values = calculateScaledNutrition(est, amount);
       const valuesWrap = document.querySelector("#estimate-values");
       if (valuesWrap) {
-        valuesWrap.innerHTML = `<strong>${number(Math.round(est.calories * factor))} <small>kcal</small></strong>
-          <p>P ${number(Math.round(est.protein * factor))}g · C ${number(Math.round(est.carbs * factor))}g · F ${number(Math.round(est.fat * factor))}g · Fi ${number(Math.round(est.fibre * factor))}g</p>`;
+        valuesWrap.innerHTML = `<strong>${number(values.calories)} <small>kcal</small></strong>
+          <p>P ${number(values.protein)}g · C ${number(values.carbs)}g · F ${number(values.fat)}g · Fi ${number(values.fibre)}g</p>`;
       }
+      document.querySelectorAll(".amount-chip").forEach((btn) => {
+        const p = Number(btn.dataset.setAmount);
+        btn.classList.toggle("active", Math.abs(p - amount) < 0.001);
+      });
     }
     return;
   }
@@ -2807,15 +2860,26 @@ document.addEventListener("submit", async (event) => {
         alert("Could not estimate this food name. Please switch to 'Manual / Custom' to enter nutrition values.");
         return;
       }
-      const amount = estimate.quantityUnit ? Number(document.querySelector("#food-amount")?.value || estimate.baseAmount) : 1;
-      const factor = estimate.quantityUnit ? amount / estimate.baseAmount : 1;
-      entryCalories = Math.round(estimate.calories * factor);
-      entryProtein = Math.round(estimate.protein * factor);
-      entryCarbs = Math.round(estimate.carbs * factor);
-      entryFat = Math.round(estimate.fat * factor);
-      entryFibre = Math.round(estimate.fibre * factor);
+      let portionAmount = undefined;
+      let portionUnit = undefined;
+      let scaled = estimate;
+
+      if (estimate.quantityUnit) {
+        const rawAmt = Number(document.querySelector("#food-amount")?.value || estimate.baseAmount);
+        portionAmount = Number.isFinite(rawAmt) && rawAmt > 0 ? rawAmt : estimate.baseAmount;
+        portionUnit = estimate.quantityUnit;
+        scaled = calculateScaledNutrition(estimate, portionAmount);
+        if (estimate.quantityUnit === "ml") {
+          amountMl = portionAmount;
+        }
+      }
+
+      entryCalories = Math.round(scaled.calories);
+      entryProtein = Math.round(scaled.protein * 10) / 10;
+      entryCarbs = Math.round(scaled.carbs * 10) / 10;
+      entryFat = Math.round(scaled.fat * 10) / 10;
+      entryFibre = Math.round(scaled.fibre * 10) / 10;
       matchedItems = estimate.matched;
-      if (estimate.quantityUnit) amountMl = amount;
     }
 
     // Photo ID management
@@ -2828,10 +2892,18 @@ document.addEventListener("submit", async (event) => {
       await saveAttachment(photoId, pendingPhotoData, { entryName: name });
     }
 
+    let formattedName = name;
+    if (portionUnit && portionAmount) {
+      const unitLabel = portionUnit === "ml" ? "ml" : portionUnit.replace("(s)", portionAmount === 1 ? "" : "s");
+      if (!name.toLowerCase().includes(unitLabel.toLowerCase())) {
+        formattedName = `${name} (${portionAmount} ${unitLabel})`;
+      }
+    }
+
     const entry = {
       id: editId || uid(),
       date: existing?.date || activeDate,
-      name: amountMl ? `${name} (${amountMl} ml)` : name,
+      name: formattedName,
       meal: "Food log",
       calories: entryCalories,
       protein: entryProtein,
@@ -2841,6 +2913,8 @@ document.addEventListener("submit", async (event) => {
       source,
       estimateItems: matchedItems,
       amountMl,
+      amount: portionAmount,
+      quantityUnit: portionUnit,
       photoId,
       updatedAt: new Date().toISOString()
     };

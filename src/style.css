@@ -636,6 +636,104 @@ button {
   margin: 6px 0;
 }
 
+.estimate-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.unit-badge {
+  font: 11px/1.2 'DM Mono', monospace;
+  background: #e2edd8;
+  color: #27401c;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.amount-field-container {
+  background: #ffffff;
+  border: 1px solid #d4dec9;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 8px 0 12px;
+}
+
+.amount-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.amount-field-label {
+  font: 12px 'Inter', sans-serif;
+  font-weight: 600;
+  color: #2c3827;
+}
+
+.amount-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.amount-input-row input {
+  width: 90px;
+  padding: 8px 10px;
+  font: 16px/1.2 'DM Mono', monospace;
+  font-weight: 600;
+  border: 1.5px solid #b6cbb0;
+  border-radius: 8px;
+  background: #fbfdf9;
+  color: #1f271d;
+}
+
+.amount-input-row input:focus {
+  border-color: #3b6b2e;
+  outline: none;
+  background: #ffffff;
+}
+
+.amount-unit-suffix {
+  font: 13px/1.2 'DM Mono', monospace;
+  color: #4a5448;
+  font-weight: 600;
+}
+
+.amount-stepper-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.amount-chip {
+  padding: 5px 10px;
+  font: 11px/1.2 'DM Mono', monospace;
+  font-weight: 500;
+  background: #edf3e7;
+  border: 1px solid #c7d9be;
+  border-radius: 16px;
+  color: #2e4424;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.amount-chip:hover {
+  background: #dfead5;
+  border-color: #a4be97;
+}
+
+.amount-chip.active {
+  background: #27401c;
+  border-color: #27401c;
+  color: #ffffff;
+  font-weight: 600;
+}
+
 .estimate-card strong {
   display: block;
   font-size: 20px;

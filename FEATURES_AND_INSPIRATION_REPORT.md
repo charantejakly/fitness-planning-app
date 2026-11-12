@@ -192,5 +192,7 @@ All candidate packages identified from **LIFT**, **OpenNutriTracker**, and **Spa
    - Integrated into Progress view.
 4. **Package 4 (Hydration Tracking):**
    - Evidence-based hydration tracking ($35\,\text{ml/kg}$ target, one-tap ml logging, and progress gauge) in Today view.
-
-
+5. **Package 5 (Granular Portion & Semi-Liquid Nutrition Scaling Engine):**
+   - Granular portions for liquid & semi-liquid foods (dal, curries, sambar, buttermilk, milk, lassi, rasam, soups, gravies) with explicit units (`bowl(s)`, `glass(es)`, `cup(s)`, `ml`, `scoop(s)`).
+   - Dynamic macro recalculation (`calculateScaledNutrition`) scaling only the scalable liquid/semi-liquid portions while preserving fixed meal components in composite dishes (e.g., scaling dal in "2 rotis with dal").
+   - Quick-tap portion chips (e.g. 0.5, 1, 1.5, 2, 3 bowls or 100, 150, 250, 300, 500 ml) with live macro preview and persisted portion details on logged cards.
